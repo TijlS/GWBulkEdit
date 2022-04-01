@@ -6,7 +6,7 @@ Project designed for GO! Atheneum Oudenaarde
 1) Create a project on Google Cloud and enable the 'Admin SDK API' 
     (https://developers.google.com/workspace/guides/create-project) 
 2) Authorization credentials for a desktop application. 
-    (https://developers.google.com/workspace/guides/create-credentials) 
+    (https://developers.google.com/workspace/guides/create-credentials#desktop-app) 
 3) Place the credentials.json in this folder
 4) Make sure the Google Workspace domain has API access enabled 
     (https://support.google.com/a/answer/60757) 
