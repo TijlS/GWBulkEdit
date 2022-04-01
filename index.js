@@ -3,9 +3,17 @@ import inquirer from "inquirer";
 import chalk from "chalk";
 import { google } from "googleapis";
 import cliProgress from 'cli-progress';
+import yargs from "yargs";
 
 const SCOPES = ["https://www.googleapis.com/auth/admin.directory.user"];
 const TOKEN_PATH = "token.json";
+
+const FLAGS = yargs
+    // .option('nosignout', {
+    //     description: "Do not sign users out when resetting primary emailadress",
+    //     type: 'boolean'
+    // }).argv
+    .argv
 
 fs.readFile("credentials.json", (err, content) => {
 	if (err) {

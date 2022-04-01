@@ -3,7 +3,12 @@
     "chalk": "^5.0.1",
     "cli-progress": "^3.10.0",
     "googleapis": "^39.2.0",
-    "inquirer": "^8.2.2"
+    "inquirer": "^8.2.2",
+    "yargs": "^17.4.0"
   },
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "start": "node .",
+    "start:nosignout": "node . --nosignout"
+  }
 }
