@@ -18,9 +18,9 @@ Project designed for GO! Atheneum Oudenaarde
 3) Run `npm run start`
 4) Open the link and sign in with the Google Workspace administator account
 5) Enter the code that you got while signing in
-6) Enter the domain name from wich you want to get the users
-7) Enter the domain you want to transfer them to
-    (jhon.doe@example.com => jhon.doe@new-domain.com)
-8) Wait until the process finishes (This can take a bit of time!) 
+6) Follow the instructions in the terminal
+7) Wait until the process finishes (This can take a bit of time!) 
+
+### :warning: This is not tested on real data
 
 © Tijl Schipper 2022
