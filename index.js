@@ -1,7 +1,7 @@
 import fs from "fs";
 import inquirer from "inquirer";
 import chalk from "chalk";
-import { admin_directory_v1, google, GoogleApis } from "googleapis";
+import { google } from "googleapis";
 import cliProgress from 'cli-progress';
 import yargs from "yargs";
 
@@ -41,49 +41,74 @@ const queryTypeQuestion = [
     },
 ]
 const domainQueryQuestions = [
-    {
-        type: "input",
-        message:
-            "Enter the domain name from wich you want to get the users",
-        name: "domainName",
-        /**
-         *
-         * @param {String} input
-         */
-        validate: function (input) {
-            let done = this.async();
+	{
+		type: "input",
+		message: "Enter the domain name from wich you want to get the users",
+		name: "domainName",
+		/**
+		 *
+		 * @param {String} input
+		 */
+		validate: function (input) {
+			let done = this.async();
 
-            setTimeout(() => {
-                if (!input.includes(".")) {
-                    done("Please provide valid domain");
-                    return;
-                }
-                done(null, true);
-            }, 500);
-        },
-    },
-    {
-        type: "input",
-        message:
-            "To wich domain do you want to transfer them?",
-        name: "newDomain",
-        /**
-         *
-         * @param {String} input
-         */
-        validate: function (input) {
-            let done = this.async();
+			setTimeout(() => {
+				if (!input.includes(".")) {
+					done("Please provide valid domain");
+					return;
+				}
+				done(null, true);
+			}, 500);
+		},
+	},
+	{
+		type: "input",
+		message: "To wich domain do you want to transfer them?",
+		name: "newDomain",
+		/**
+		 *
+		 * @param {String} input
+		 */
+		validate: function (input) {
+			let done = this.async();
 
-            setTimeout(() => {
-                if (!input.includes(".")) {
-                    done("Please provide valid domain");
-                    return;
-                }
-                done(null, true);
-            }, 500);
-        },
-    },
-]
+			setTimeout(() => {
+				if (!input.includes(".")) {
+					done("Please provide valid domain");
+					return;
+				}
+				done(null, true);
+			}, 500);
+		},
+	},
+];
+const organisationQueryQuestions = [
+	{
+		type: "input",
+		message: "Enter the organisation path from wich you want to get the users",
+		name: "organisationName",
+	},
+	{
+		type: "input",
+		message: "To wich domain do you want to transfer them?",
+		name: "newDomain",
+		/**
+		 *
+		 * @param {String} input
+		 */
+		validate: function (input) {
+			let done = this.async();
+
+			setTimeout(() => {
+				if (!input.includes(".")) {
+					done("Please provide valid domain");
+					return;
+				}
+				done(null, true);
+			}, 500);
+		},
+	},
+];
 
 const FLAGS = yargs
     // .option('nosignout', {
@@ -211,19 +236,30 @@ function listUsers(auth) {
                     .then((answers) => {
                         if (answers.queryType == 1) {
                             inquirer.prompt(domainQueryQuestions).then(answers => {
-                                updateUsersPrimaryEmailByDomain(answers, service)
+                                updateUsersPrimaryEmail(answers, service, 1)
                             })
+                        } else if (answers.queryType == 2){
+                            inquirer.prompt(organisationQueryQuestions).then((answers) => {
+                                updateUsersPrimaryEmail(answers, 2);
+                            });
                         }
                     });
             }
         });    
 }
 
-const updateUsersPrimaryEmailByDomain = (answers, service) => {
+const updateUsersPrimaryEmail = (answers, service, queryType) => {
+    let query = {}
+    switch (queryType) {
+        case 1:
+            query = { domain : answers.domainName }
+            break;
+        case 1:
+            query = { query: { orgUnitPath: answers.organisationName } }
+            break;
+    }
     service.users.list(
-        {
-            domain: answers.domainName
-        },
+        query,
         (err, res) => {
             if (err)
                 return console.error("The API returned an error:", err.message);
