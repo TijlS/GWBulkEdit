@@ -17,7 +17,7 @@ Project designed for GO! Atheneum Oudenaarde
 2) Make sure that the credentials.json is in this folder
 3) Run `npm run start`
 4) Open the link and sign in with the Google Workspace administator account
-5) Enter the code that you got wile signing in
+5) Enter the code that you got while signing in
 6) Enter the domain name from wich you want to get the users
 7) Enter the domain you want to transfer them to
     (jhon.doe@example.com => jhon.doe@new-domain.com)
