@@ -21,6 +21,6 @@ Project designed for GO! Atheneum Oudenaarde
 6) Follow the instructions in the terminal
 7) Wait until the process finishes (This can take a bit of time!) 
 
-### :warning: This is not tested on real data
+### ⚠️ This is not tested on real data
 
 © Tijl Schipper 2022
