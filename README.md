@@ -2,7 +2,7 @@
 
 Project designed for GO! Atheneum Oudenaarde
 
-## Setup
+## Setup (see [HELP.md](help.md))
 1) Create a project on Google Cloud and enable the 'Admin SDK API' 
     (https://developers.google.com/workspace/guides/create-project) 
 2) Authorization credentials for a desktop application. 
