@@ -1,2 +1,11 @@
+# node modules
 node_modules/
+
+# security
+.env
+.env.*
+
+config/
+
+# test files
 test.js

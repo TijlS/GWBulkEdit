@@ -4,18 +4,24 @@ import chalk from "chalk";
 import { google } from "googleapis";
 import cliProgress from 'cli-progress';
 import yargs from "yargs";
+import { hideBin } from "yargs/helpers"
+import dayjs from 'dayjs';
 
 const SCOPES = ["https://www.googleapis.com/auth/admin.directory.user"];
 const TOKEN_PATH = "token.json";
 const whatQuestion = [{
     type: "list",
     message: "What do you want to do?",
-    choices: ["Change users primary email"],
+    choices: ["Change users primary email", "Manage organization groups", "Save all users to local file"],
     name: "what",
     filter(val) {
         switch (val) {
             case "Change users primary email":
                 return 1;
+            case "Manage organization groups":
+                return 2;
+			case "Save all users to local file":
+				return 3;
             default:
                 return 1;
         }
@@ -110,15 +116,19 @@ const organisationQueryQuestions = [
 	},
 ];
 
-const FLAGS = yargs
+const FLAGS = yargs(hideBin(process.argv))
     // .option('nosignout', {
     //     description: "Do not sign users out when resetting primary emailadress",
     //     type: 'boolean'
     // }).argv
-    .argv
+    .option('dev', {
+        description: "Skip the part of creating/updating things",
+        type: 'boolean'
+    })
+    .parse()
 
 fs.readFile("credentials.json", (err, content) => {
-	if (err) {
+	if (err && FLAGS.dev !== true) {
         if(err.code == 'ENOENT'){
             console.error(chalk.white(`
 ${chalk.white.bgYellow('Make sure you have initialized the project correctly ')}
@@ -139,8 +149,12 @@ ${chalk.white.bgRedBright('3) Place the credentials.json in this folder')}
             process.exit(1)
         }
     }
+	if(FLAGS.dev !== true){
+		authorize(JSON.parse(content), listUsers);
+	}else{
+		authorize(null, listUsers);
+	}
 
-	authorize(JSON.parse(content), listUsers);
 });
 
 /**
@@ -149,20 +163,24 @@ ${chalk.white.bgRedBright('3) Place the credentials.json in this folder')}
  * @param {fuction} cb
  */
 function authorize(credentials, cb) {
-	const { client_secret, client_id, redirect_uris } = credentials.installed;
-
-	const oauth2Client = new google.auth.OAuth2(
-		client_id,
-		client_secret,
-		redirect_uris[0]
-	);
-
-	fs.readFile(TOKEN_PATH, (err, token) => {
-		if (err) return getNewToken(oauth2Client, cb);
-
-		oauth2Client.credentials = JSON.parse(token);
-		cb(oauth2Client);
-	});
+	
+	if(FLAGS.dev !== true){
+		const { client_secret, client_id, redirect_uris } = credentials.installed;
+	
+		const oauth2Client = new google.auth.OAuth2(
+			client_id,
+			client_secret,
+			redirect_uris[0]
+		);
+		fs.readFile(TOKEN_PATH, (err, token) => {
+			if (err) return getNewToken(oauth2Client, cb);
+	
+			oauth2Client.credentials = JSON.parse(token);
+			cb(oauth2Client);
+		});
+	}else{
+		cb(null)
+	}
 }
 
 /**
@@ -245,10 +263,21 @@ function listUsers(auth) {
                         }
                     });
             }
+			else if (answers.what == 2){
+				console.warn(chalk.white.bgYellow(' Warning! This feature is in development '))
+				process.exit(1)
+			}
+			else if (answers.what == 3){
+				saveUsersToLocalFile(service);
+			}
         });    
 }
 
-const updateUsersPrimaryEmail = (answers, service, queryType) => {
+const sleep = time => {
+	return new Promise(resolve => setTimeout(resolve, time))
+}
+
+const updateUsersPrimaryEmail = async (answers, service, queryType) => {
     let query = {}
     switch (queryType) {
         case 1:
@@ -258,36 +287,88 @@ const updateUsersPrimaryEmail = (answers, service, queryType) => {
             query = { query: { orgUnitPath: answers.organisationName } }
             break;
     }
-    service.users.list(
-        query,
-        (err, res) => {
-            if (err)
-                return console.error("The API returned an error:", err.message);
+	if(FLAGS.dev !== true){
+		service.users.list(
+			query,
+			(err, res) => {
+				if (err)
+					return console.error("The API returned an error:", err.message);
+	
+				const users = res.data.users;
+				const statusBar = new cliProgress.SingleBar({}, cliProgress.Presets.legacy)
+				let i = 0;
+				if (users.length) {
+					statusBar.start(users.length, 0)
+					users.forEach(async (user) => {
+						let oldEmail = user.primaryEmail
+						oldEmail = oldEmail.split('@')
+						
+						user.primaryEmail = `${oldEmail[0]}@${answers.newDomain}`
+	
+						try {
+							service.users.update({
+								userKey: user.id,
+								requestBody: user
+							});
+						} catch (err) {
+							console.error(chalk.white.bgRedBright('An error occured: '))
+							console.error(err)
+							process.exit(1)
+						}
+						i++;
+						await sleep(1000)
+						statusBar.update(i)
+					});
+					statusBar.stop()
+					console.log(chalk.white.bgGreenBright('Finished!'))
+					process.exit(0)
+				} else {
+					console.log(chalk.white.bgYellow('No users found.'));
+				}
+			}
+		);
+	}else{
+		const statusBar = new cliProgress.SingleBar({}, cliProgress.Presets.legacy)
+		statusBar.start(100, 0)
+		for (let i = 0; i < 100; i++) {
+			await sleep(1000)
+			statusBar.update(i)
+		}
+		statusBar.stop()
+		console.log(chalk.white.bgGreenBright('Finished!'))
+		process.exit(0)
+	}
+}
 
-            const users = res.data.users;
-            const statusBar = new cliProgress.SingleBar({}, cliProgress.Presets.legacy)
-            let i = 0;
-            if (users.length) {
-                statusBar.start(users.length, 0)
-                users.forEach((user) => {
-                    let oldEmail = user.primaryEmail
-                    oldEmail = oldEmail.split('@')
-                    
-                    user.primaryEmail = `${oldEmail[0]}@${answers.newDomain}`
+const saveUsersToLocalFile = async (service) => {
+	if(FLAGS.dev !== true){
+		service.users.list(
+			{},
+			(err, res) => {
+				if (err)
+					return console.error("The API returned an error:", err.message);
+	
+				const users = res.data.users;
+				const statusBar = new cliProgress.SingleBar({}, cliProgress.Presets.legacy)
+				let i = 0;
+				if (users.length) {
+					statusBar.start(1, 0)
+					
+					let filename = `users_${dayjs().format('DD-MM-YYYY_HH-mm')}.json`
 
-                    service.users.update({
-                        userKey: user.id,
-                        requestBody: user
-                    });
-                    i++;
-                    statusBar.update(i)
-                });
-                statusBar.stop()
-                console.log(chalk.white.bgGreenBright('Finished!'))
-                process.exit(0)
-            } else {
-                console.log(chalk.white.bgYellow('No users found.'));
-            }
-        }
-    );
+					fs.writeFileSync(`config/${filename}`, JSON.parse(users));
+
+					statusBar.increment(1)
+					statusBar.stop()
+					console.log(chalk.white.bgGreenBright('Finished!'))
+					process.exit(0)
+				} else {
+					console.log(chalk.white.bgYellow('No users found.'));
+				}
+			}
+		);
+	}else{
+		console.log(chalk.white.bgGreenBright('Finished! (You are in dev mode)'))
+		process.exit(0)
+	}
 }

@@ -40,3 +40,8 @@ Project designed for GO! Atheneum Oudenaarde
 #### 11) ![Step 11](help/step11.png?raw=true)
 
     Download the credentials and place the file in this folder. Make sure the file is named ***credentials.json***
+
+### ➕ Optional
+#### 12) ![Step 12](help/step12.png?raw=true)
+
+    In OAuth Consent screen, make the app internal
