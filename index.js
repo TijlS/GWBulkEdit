@@ -278,6 +278,19 @@ const sleep = time => {
 }
 
 const updateUsersPrimaryEmail = async (answers, service, queryType) => {
+	let keepOldDomainAsAlias = true;
+
+	await inquirer.prompt({
+		type: 'confirm',
+		name: 'keepOldDomainAsAlias',
+		message: 'Keep the old domain as an alias?',
+		default: true
+	}).then(a => {
+		if(a.keepOldDomainAsAlias == false){
+			keepOldDomainAsAlias = false
+		}
+	})
+
     let query = {}
     switch (queryType) {
         case 1:
@@ -301,15 +314,24 @@ const updateUsersPrimaryEmail = async (answers, service, queryType) => {
 					statusBar.start(users.length, 0)
 					users.forEach(async (user) => {
 						let oldEmail = user.primaryEmail
-						oldEmail = oldEmail.split('@')
+						let oldEmailSplit = oldEmail.split('@')
 						
-						user.primaryEmail = `${oldEmail[0]}@${answers.newDomain}`
+						user.primaryEmail = `${oldEmailSplit[0]}@${answers.newDomain}`
 	
 						try {
 							service.users.update({
 								userKey: user.id,
 								requestBody: user
 							});
+
+							if(keepOldDomainAsAlias){
+								service.users.aliases.insert({
+									userKey: user.id,
+									requestBody: {
+										"alias": oldEmail
+									}
+								})
+							}
 						} catch (err) {
 							console.error(chalk.white.bgRedBright('An error occured: '))
 							console.error(err)
