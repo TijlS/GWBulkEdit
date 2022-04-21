@@ -378,7 +378,7 @@ const saveUsersToLocalFile = async (service) => {
 					
 					let filename = `users_${dayjs().format('DD-MM-YYYY_HH-mm')}.json`
 
-					fs.writeFileSync(`config/${filename}`, JSON.stringify(users));
+					await fs.writeFileSync(`config/${filename}`, JSON.stringify(users));
 
 					statusBar.increment(1)
 					statusBar.stop()
@@ -393,7 +393,7 @@ const saveUsersToLocalFile = async (service) => {
 		let info = { "info": "No data inserted, DEV mode was activated" }
 		let filename = `users_${dayjs().format('DD-MM-YYYY_HH-mm')}.json`
 
-		fs.writeFileSync(`config/${filename}`, JSON.stringify(info));
+		await fs.writeFileSync(`config/${filename}`, JSON.stringify(info));
 
 		console.log(chalk.white.bgGreenBright('Finished! (You are in dev mode)'))
 		process.exit(0)
