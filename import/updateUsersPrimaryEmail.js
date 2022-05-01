@@ -42,6 +42,7 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 				cliProgress.Presets.shades_classic,
 			);
 			let i = 0;
+			let amountOfRequest = 0;
 			if (users.length) {
 				statusBar.start(users.length, 0);
 				users.forEach(async (user) => {
@@ -51,10 +52,19 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 					user.primaryEmail = `${oldEmailSplit[0]}@${answers.newDomain}`;
 
 					try {
+						if(amountOfRequest >= 2350){
+							console.warn(
+								chalk.white.bold.bgYellow('WARNING: ') + chalk.white("The default limit of 2400 request per minute is almost reached. To make sure that everything will be completed, the program will wait for 100 seconds.")
+							)
+							sleep(100000);
+							amountOfRequest = 0;
+						}
+
 						service.users.update({
 							userKey: user.id,
 							requestBody: user,
 						});
+						amountOfRequest++;
 
 						if (keepOldDomainAsAlias) {
 							service.users.aliases.insert({
@@ -63,6 +73,7 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 									alias: oldEmail,
 								},
 							});
+							amountOfRequest++;
 						}
 					} catch (err) {
 						console.error(
