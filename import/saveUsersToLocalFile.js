@@ -2,10 +2,55 @@ import chalk from "chalk";
 import cliProgress from "cli-progress";
 import dayjs from "dayjs";
 import fs from "fs";
+import inquirer from "inquirer"
 
 const saveUsersToLocalFile = async (service, FLAGS) => {
+	let fromDomain = false;
+	let domainName;
+	await inquirer.prompt(
+		{
+			type: "confirm",
+			name: "selectFromDomain",
+			message: "Selecteren van domein?",
+			default: false
+		}
+	).then(async (answers) =>  {
+		if(answers.selectFromDomain == true){
+			fromDomain == true;
+			await inquirer.prompt(
+				{
+					type: "input",
+					name: "domainName",
+					message: "Domeinnaam",
+					/**
+					 *
+					 * @param {String} input
+					 */
+					validate: function (input) {
+						let done = this.async();
+
+						setTimeout(() => {
+							if (!input.includes(".")) {
+								done("Please provide valid domain");
+								return;
+							}
+							done(null, true);
+						}, 500);
+					},
+				}
+			).then(answers => {
+				domainName == answers.domainName;
+			})
+		}
+	})
 	if (FLAGS.dev !== true) {
-		service.users.list({}, (err, res) => {
+		let searchQuery = {};
+		if(fromDomain == true){
+			searchQuery = {
+				domain: domainName
+			}
+		}
+		service.users.list(searchQuery, (err, res) => {
 			if (err)
 				return console.error("The API returned an error:", err.message);
 

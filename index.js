@@ -15,7 +15,7 @@ const whatQuestion = [
 		choices: [
 			"Change users primary email",
 			"Manage organization groups",
-			"Save all users to local file",
+			"Save users to local file",
 		],
 		name: "what",
 		filter(val) {
@@ -24,7 +24,7 @@ const whatQuestion = [
 					return 1;
 				case "Manage organization groups":
 					return 2;
-				case "Save all users to local file":
+				case "Save users to local file":
 					return 3;
 				default:
 					return 1;
