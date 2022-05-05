@@ -11,7 +11,7 @@ const saveUsersToLocalFile = async (service, FLAGS) => {
 		{
 			type: "confirm",
 			name: "selectFromDomain",
-			message: "Selecteren van domein?",
+			message: "Select from domain?",
 			default: false
 		}
 	).then(async (answers) =>  {
@@ -21,7 +21,7 @@ const saveUsersToLocalFile = async (service, FLAGS) => {
 				{
 					type: "input",
 					name: "domainName",
-					message: "Domeinnaam",
+					message: "Domainname",
 					/**
 					 *
 					 * @param {String} input
@@ -50,7 +50,7 @@ const saveUsersToLocalFile = async (service, FLAGS) => {
 				domain: domainName
 			}
 		}
-		service.users.list(searchQuery, (err, res) => {
+		await service.users.list(searchQuery, (err, res) => {
 			if (err)
 				return console.error("The API returned an error:", err.message);
 
@@ -59,7 +59,6 @@ const saveUsersToLocalFile = async (service, FLAGS) => {
 				{},
 				cliProgress.Presets.shades_classic,
 			);
-			let i = 0;
 			if (users.length) {
 				statusBar.start(1, 0);
 

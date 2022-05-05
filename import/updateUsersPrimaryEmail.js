@@ -32,7 +32,7 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 			break;
 	}
 	if (FLAGS.dev !== true) {
-		service.users.list(query, (err, res) => {
+		await service.users.list(query, (err, res) => {
 			if (err)
 				return console.error("The API returned an error:", err.message);
 
@@ -60,14 +60,14 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 							amountOfRequest = 0;
 						}
 
-						service.users.update({
+						await service.users.update({
 							userKey: user.id,
 							requestBody: user,
 						});
 						amountOfRequest++;
 
 						if (keepOldDomainAsAlias) {
-							service.users.aliases.insert({
+							await service.users.aliases.insert({
 								userKey: user.id,
 								requestBody: {
 									alias: oldEmail,
