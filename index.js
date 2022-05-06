@@ -131,6 +131,10 @@ const FLAGS = yargs(hideBin(process.argv))
 		description: "Skip the part of creating/updating things",
 		type: "boolean",
 	})
+	.option("signout", {
+		description: "Sign all updated users out after updating them",
+		type: "boolean"
+	})
 	.parse();
 
 startAuth(aksQuestions, FLAGS);

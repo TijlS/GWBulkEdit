@@ -75,6 +75,13 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 							});
 							amountOfRequest++;
 						}
+						if(FLAGS.signout){
+							await service.users.signOut({
+								userKey: user.id
+							})
+							amountOfRequest++;
+						}
+
 					} catch (err) {
 						console.error(
 							chalk.white.bgRedBright("An error occured: ")
