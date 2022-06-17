@@ -7,6 +7,7 @@ import { hideBin } from "yargs/helpers";
 import startAuth from "./import/auth.js";
 import updateUsersPrimaryEmail from "./import/updateUsersPrimaryEmail.js";
 import saveUsersToLocalFile from "./import/saveUsersToLocalFile.js";
+import clearlocalFiles from "./import/clearLocalFiles.js";
 
 const whatQuestion = [
 	{
@@ -16,6 +17,7 @@ const whatQuestion = [
 			"Change users primary email",
 			"Manage organization groups",
 			"Save users to local file",
+			"Clear all files in config directory"
 		],
 		name: "what",
 		
@@ -27,6 +29,8 @@ const whatQuestion = [
 					return 2;
 				case "Save users to local file":
 					return 3;
+				case "Clear all files in config directory":
+					return 4;
 				default:
 					return 1;
 			}
@@ -171,6 +175,8 @@ function aksQuestions(auth) {
 			process.exit(1);
 		} else if (answers.what == 3) {
 			saveUsersToLocalFile(service, FLAGS);
+		} else if (answers.what == 4) {
+			clearlocalFiles()
 		}
 	});
 }

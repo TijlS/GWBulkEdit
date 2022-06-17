@@ -2,8 +2,6 @@
 
 [🔙 Back](README.md)
 
-Project designed for GO! Atheneum Oudenaarde
-
 ## Steps for setup
 #### 1) ![Step 1](help/step1.png?raw=true)
 

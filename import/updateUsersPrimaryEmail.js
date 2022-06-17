@@ -39,7 +39,7 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 			const users = res.data.users;
 			const statusBar = new cliProgress.SingleBar(
 				{},
-				cliProgress.Presets.shades_classic,
+				cliProgress.Presets.shades_classic
 			);
 			let i = 0;
 			let amountOfRequest = 0;
@@ -52,10 +52,13 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 					user.primaryEmail = `${oldEmailSplit[0]}@${answers.newDomain}`;
 
 					try {
-						if(amountOfRequest >= 2350){
+						if (amountOfRequest >= 2350) {
 							console.warn(
-								chalk.white.bold.bgYellow('WARNING: ') + chalk.white("The default limit of 2400 request per minute is almost reached. To make sure that everything will be completed, the program will wait for 100 seconds.")
-							)
+								chalk.white.bold.bgYellow("WARNING: ") +
+									chalk.white(
+										"The default limit of 2400 request per minute is almost reached. To make sure that everything will be completed, the program will wait for 100 seconds."
+									)
+							);
 							sleep(100000);
 							amountOfRequest = 0;
 						}
@@ -75,13 +78,12 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 							});
 							amountOfRequest++;
 						}
-						if(FLAGS.signout){
+						if (FLAGS.signout) {
 							await service.users.signOut({
-								userKey: user.id
-							})
+								userKey: user.id,
+							});
 							amountOfRequest++;
 						}
-
 					} catch (err) {
 						console.error(
 							chalk.white.bgRedBright("An error occured: ")
@@ -103,7 +105,7 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 	} else {
 		const statusBar = new cliProgress.SingleBar(
 			{},
-			cliProgress.Presets.shades_classic,
+			cliProgress.Presets.shades_classic
 		);
 		statusBar.start(100, 0);
 		for (let i = 0; i < 100; i++) {
@@ -116,4 +118,4 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 	}
 };
 
-export default updateUsersPrimaryEmail
+export default updateUsersPrimaryEmail;
