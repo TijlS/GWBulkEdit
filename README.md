@@ -3,7 +3,7 @@
 ## Introduction
 This package can be used to bulk-update users of a Google Workspace.
 Usefull links:
-- [Setup](#setup-see-helpmdhelpmd)
+- [Setup](#setup-see-helpmd)
 - [Instructions](#instructions)
 - [Commands](#commands)
 
@@ -24,16 +24,17 @@ Usefull links:
 ## Instructions
 1) Make sure that the credentials.json is in this folder
 2) Run `npm run start`
-3) Open the link and sign in with the Google Workspace administator account
-4) Enter the code that you got while signing in
+3) The app will open a browser window for signing in with your Google accounnt
+4) Log in using your Google Workspace Admin account
 5) Follow the instructions in the terminal
-6) **⚠️ The standard command signs the users out after their account has been updated. See [commands](#commands) for more info**
+6) ~~**⚠️ The standard command signs the users out after their account has been updated. See [commands](#commands) for more info**~~ Change reverted
 
 ## Commands
 | Command                   | Description   |
 |:--------------------------|:--------------|
 |`npm run start`            | Run the program and sign the users out after an update |
-|`npm run start:nosignout`  | Run the program and don't sign the users out after an update |
+|~~`npm run start:nosignout`~~  | ~~Run the program and don't sign the users out after an update~~ Command removed |
+|`npm run start:signout`            | Sign the users out after their account has been updated |
 
 
 

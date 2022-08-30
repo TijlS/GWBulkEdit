@@ -16,7 +16,7 @@
   "type": "module",
   "scripts": {
     "start": "node .",
-    "start:nosignout": "node . --nosignout",
+    "start:signout": "node . --signout",
     "start:dev": "node . --dev",
     "dev": "nodemon server.js"
   }

@@ -133,10 +133,6 @@ const organisationQueryQuestions = [
 ];
 
 const FLAGS = yargs(hideBin(process.argv))
-	// .option('nosignout', {
-	//     description: "Do not sign users out when resetting primary emailadress",
-	//     type: 'boolean'
-	// }).argv
 	.option("dev", {
 		description: "Skip the part of creating/updating things",
 		type: "boolean",
