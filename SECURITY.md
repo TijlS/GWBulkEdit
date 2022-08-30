@@ -2,13 +2,14 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Previous versions will (probably) still work, but aren't supported anymore by us.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.0.0  | ✅ |
-| 2.0.x   | ✅|
+| 1.0.0   | ❎ |
+| 2.0.x   | ❎ |
+| 3.x.x   | ✅ |
+
 
 ## Reporting a Vulnerability
 
