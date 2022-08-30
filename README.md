@@ -16,6 +16,7 @@ Usefull links:
     (https://developers.google.com/workspace/guides/create-project) 
 4) Authorization credentials for a desktop application. 
     (https://developers.google.com/workspace/guides/create-credentials#desktop-app) 
+    (/HELP.md)
 5) Place the credentials.json in this folder
 6) Make sure the Google Workspace domain has API access enabled 
     (https://support.google.com/a/answer/60757) 
@@ -24,7 +25,7 @@ Usefull links:
 ## Instructions
 1) Make sure that the credentials.json is in this folder
 2) Run `npm run start`
-3) The app will open a browser window for signing in with your Google accounnt
+3) The app will open a browser window for signing in with your Google account
 4) Log in using your Google Workspace Admin account
 5) Follow the instructions in the terminal
 6) ~~**⚠️ The standard command signs the users out after their account has been updated. See [commands](#commands) for more info**~~ Change reverted
