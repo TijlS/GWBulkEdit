@@ -4,20 +4,29 @@ import { google } from "googleapis";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import startAuth from "./import/auth.js";
-import updateUsersPrimaryEmail from "./import/updateUsersPrimaryEmail.js";
-import saveUsersToLocalFile from "./import/saveUsersToLocalFile.js";
+
+import { authorize } from "./functions/auth.js";
+import updateUsersPrimaryEmail from "./functions/updateUsersPrimaryEmail.js";
+import saveUsersToLocalFile from "./functions/saveUsersToLocalFile.js";
+import clearlocalFiles from "./functions/clearLocalFiles.js";
+import removeGroups from "./functions/removeGroups.js";
 
 const whatQuestion = [
 	{
 		type: "list",
 		message: "What do you want to do?",
 		choices: [
+			new inquirer.Separator('USERS'),
 			"Change users primary email",
-			"Manage organization groups",
 			"Save users to local file",
+			new inquirer.Separator('GROUPS'),
+			"Manage organization groups",
+			"Remove all users from all groups",
+			new inquirer.Separator('CONFIG'),
+			"Clear all files in generated directory"
 		],
 		name: "what",
+		
 		filter(val) {
 			switch (val) {
 				case "Change users primary email":
@@ -26,8 +35,10 @@ const whatQuestion = [
 					return 2;
 				case "Save users to local file":
 					return 3;
-				default:
-					return 1;
+				case "Clear all files in config directory":
+					return 4;
+				case "Remove all users from all groups":
+					return 5;
 			}
 		},
 	},
@@ -122,17 +133,17 @@ const organisationQueryQuestions = [
 ];
 
 const FLAGS = yargs(hideBin(process.argv))
-	// .option('nosignout', {
-	//     description: "Do not sign users out when resetting primary emailadress",
-	//     type: 'boolean'
-	// }).argv
 	.option("dev", {
 		description: "Skip the part of creating/updating things",
 		type: "boolean",
 	})
+	.option("signout", {
+		description: "Sign all updated users out after updating them",
+		type: "boolean"
+	})
 	.parse();
 
-startAuth(aksQuestions, FLAGS);
+authorize().then(aksQuestions)
 
 /**
  * Lists the first 10 users in the domain.
@@ -166,6 +177,10 @@ function aksQuestions(auth) {
 			process.exit(1);
 		} else if (answers.what == 3) {
 			saveUsersToLocalFile(service, FLAGS);
+		} else if (answers.what == 4) {
+			clearlocalFiles()
+		} else if (answers.what == 5) {
+			removeGroups(service, FLAGS)
 		}
 	});
 }

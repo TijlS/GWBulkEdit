@@ -1,16 +1,23 @@
 {
   "dependencies": {
+    "@google-cloud/local-auth": "^2.1.0",
     "chalk": "^5.0.1",
     "cli-progress": "^3.10.0",
     "dayjs": "^1.11.1",
-    "googleapis": "^39.2.0",
+    "ejs": "^3.1.8",
+    "express": "^4.18.1",
+    "express-fileupload": "^1.4.0",
+    "googleapis": "^105.0.0",
     "inquirer": "^8.2.2",
+    "nodemon": "^2.0.19",
+    "socket.io": "^4.5.1",
     "yargs": "^17.4.0"
   },
   "type": "module",
   "scripts": {
     "start": "node .",
-    "start:nosignout": "node . --nosignout",
-    "start:dev": "node . --dev"
+    "start:signout": "node . --signout",
+    "start:dev": "node . --dev",
+    "dev": "nodemon server.js"
   }
 }
