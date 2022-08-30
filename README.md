@@ -16,7 +16,7 @@ Usefull links:
     (https://developers.google.com/workspace/guides/create-project) 
 4) Authorization credentials for a desktop application. 
     (https://developers.google.com/workspace/guides/create-credentials#desktop-app) 
-    (/HELP.md)
+    ([HELP.md](HELP.md))
 5) Place the credentials.json in this folder
 6) Make sure the Google Workspace domain has API access enabled 
     (https://support.google.com/a/answer/60757) 
