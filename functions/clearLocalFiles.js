@@ -4,7 +4,7 @@ import path from "path";
 
 const clearlocalFiles = async () => {
 	console.log(chalk.green("Clearing files..."));
-	const files = await fs.readdirSync("config/", { encoding: 'utf-8' });
+	const files = await fs.readdirSync("generated/", { encoding: 'utf-8' });
 
 	for (const file of files) {
 		fs.unlink(path.join("config", file), (err) => {

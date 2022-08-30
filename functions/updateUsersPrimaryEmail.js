@@ -33,9 +33,11 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 	}
 	if (FLAGS.dev !== true) {
 		await service.users.list(query, (err, res) => {
-			if (err)
-				return console.error("The API returned an error:", err.message);
-
+			if (err) {
+				console.error("The API returned an error:", err.message);
+				process.exit()
+			}
+				
 			const users = res.data.users;
 			const statusBar = new cliProgress.SingleBar(
 				{},

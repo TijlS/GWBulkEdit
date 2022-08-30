@@ -1,17 +1,15 @@
 import chalk from "chalk";
 import cliProgress from "cli-progress";
-import dayjs from "dayjs";
-import fs from "fs";
 import inquirer from "inquirer";
 
-const saveUsersToLocalFile = async (service, FLAGS) => {
+const removeGroups = async (service, flags) => {
 	let fromDomain = false;
 	let domainName;
 	await inquirer
 		.prompt({
 			type: "confirm",
 			name: "selectFromDomain",
-			message: "Select from domain?",
+			message: "Select groups from (sub/other)domain?",
 			default: false,
 		})
 		.then(async (answers) => {
@@ -86,18 +84,11 @@ const saveUsersToLocalFile = async (service, FLAGS) => {
 			}
 		});
 	} else {
-		let info = { info: "No data inserted, DEV mode was activated" };
-		let filename = `users_${dayjs().format("DD-MM-YYYY_HH-mm")}_DEV.json`;
-
-		fs.writeFile(`config/${filename}`, JSON.stringify(info), (err) => {
-			if (err)
-				return console.error("The API returned an error:", err.message);
-			console.log(
-				chalk.white.bgGreenBright("Finished! (You are in dev mode)")
-			);
-			process.exit(0);
-		});
+		console.log(
+			chalk.white.bgGreenBright("Finished! (You are in dev mode)")
+		);
+		process.exit(0);
 	}
 };
 
-export default saveUsersToLocalFile;
+export default removeGroups;

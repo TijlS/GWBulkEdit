@@ -4,20 +4,26 @@ import { google } from "googleapis";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import startAuth from "./import/auth.js";
-import updateUsersPrimaryEmail from "./import/updateUsersPrimaryEmail.js";
-import saveUsersToLocalFile from "./import/saveUsersToLocalFile.js";
-import clearlocalFiles from "./import/clearLocalFiles.js";
+
+import { authorize } from "./functions/auth.js";
+import updateUsersPrimaryEmail from "./functions/updateUsersPrimaryEmail.js";
+import saveUsersToLocalFile from "./functions/saveUsersToLocalFile.js";
+import clearlocalFiles from "./functions/clearLocalFiles.js";
+import removeGroups from "./functions/removeGroups.js";
 
 const whatQuestion = [
 	{
 		type: "list",
 		message: "What do you want to do?",
 		choices: [
+			new inquirer.Separator('USERS'),
 			"Change users primary email",
-			"Manage organization groups",
 			"Save users to local file",
-			"Clear all files in config directory"
+			new inquirer.Separator('GROUPS'),
+			"Manage organization groups",
+			"Remove all users from all groups",
+			new inquirer.Separator('CONFIG'),
+			"Clear all files in generated directory"
 		],
 		name: "what",
 		
@@ -31,8 +37,8 @@ const whatQuestion = [
 					return 3;
 				case "Clear all files in config directory":
 					return 4;
-				default:
-					return 1;
+				case "Remove all users from all groups":
+					return 5;
 			}
 		},
 	},
@@ -141,7 +147,7 @@ const FLAGS = yargs(hideBin(process.argv))
 	})
 	.parse();
 
-startAuth(aksQuestions, FLAGS);
+authorize().then(aksQuestions)
 
 /**
  * Lists the first 10 users in the domain.
@@ -177,6 +183,8 @@ function aksQuestions(auth) {
 			saveUsersToLocalFile(service, FLAGS);
 		} else if (answers.what == 4) {
 			clearlocalFiles()
+		} else if (answers.what == 5) {
+			removeGroups(service, FLAGS)
 		}
 	});
 }
