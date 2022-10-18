@@ -2,6 +2,8 @@ import inquirer from "inquirer";
 import chalk from "chalk";
 import cliProgress from "cli-progress";
 
+import { getUsers } from "./getUsers.js";
+
 const sleep = (time) => {
 	return new Promise((resolve) => setTimeout(resolve, time));
 };
@@ -32,78 +34,71 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 			break;
 	}
 	if (FLAGS.dev !== true) {
-		await service.users.list(query, (err, res) => {
-			if (err) {
-				console.error("The API returned an error:", err.message);
-				process.exit()
-			}
-				
-			const users = res.data.users;
-			const statusBar = new cliProgress.SingleBar(
-				{},
-				cliProgress.Presets.shades_classic
-			);
-			let i = 0;
-			let amountOfRequest = 0;
-			if (users.length) {
-				statusBar.start(users.length, 0);
-				users.forEach(async (user) => {
-					let oldEmail = user.primaryEmail;
-					let oldEmailSplit = oldEmail.split("@");
+		const users = await getUsers(query, service)
 
-					user.primaryEmail = `${oldEmailSplit[0]}@${answers.newDomain}`;
+		const statusBar = new cliProgress.SingleBar(
+			{},
+			cliProgress.Presets.shades_classic
+		);
+		let i = 0;
+		let amountOfRequest = 0;
+		if (users.length) {
+			statusBar.start(users.length, 0);
+			users.forEach(async (user) => {
+				let oldEmail = user.primaryEmail;
+				let oldEmailSplit = oldEmail.split("@");
 
-					try {
-						if (amountOfRequest >= 2350) {
-							console.warn(
-								chalk.white.bold.bgYellow("WARNING: ") +
-									chalk.white(
-										"The default limit of 2400 request per minute is almost reached. To make sure that everything will be completed, the program will wait for 100 seconds."
-									)
-							);
-							sleep(100000);
-							amountOfRequest = 0;
-						}
+				user.primaryEmail = `${oldEmailSplit[0]}@${answers.newDomain}`;
 
-						await service.users.update({
+				try {
+					if (amountOfRequest >= 2350) {
+						console.warn(
+							chalk.white.bold.bgYellow("WARNING: ") +
+								chalk.white(
+									"The default limit of 2400 request per minute is almost reached. To make sure that everything will be completed, the program will wait for 100 seconds."
+								)
+						);
+						sleep(100000);
+						amountOfRequest = 0;
+					}
+
+					await service.users.update({
+						userKey: user.id,
+						requestBody: user,
+					});
+					amountOfRequest++;
+
+					if (keepOldDomainAsAlias) {
+						await service.users.aliases.insert({
 							userKey: user.id,
-							requestBody: user,
+							requestBody: {
+								alias: oldEmail,
+							},
 						});
 						amountOfRequest++;
-
-						if (keepOldDomainAsAlias) {
-							await service.users.aliases.insert({
-								userKey: user.id,
-								requestBody: {
-									alias: oldEmail,
-								},
-							});
-							amountOfRequest++;
-						}
-						if (FLAGS.signout) {
-							await service.users.signOut({
-								userKey: user.id,
-							});
-							amountOfRequest++;
-						}
-					} catch (err) {
-						console.error(
-							chalk.white.bgRedBright("An error occured: ")
-						);
-						console.error(err);
-						process.exit(1);
 					}
-					i++;
-					await sleep(1000);
-					statusBar.update(i);
-				});
-				statusBar.stop();
-				console.log(chalk.white.bgGreenBright("Finished!"));
-				process.exit(0);
-			} else {
-				console.log(chalk.white.bgYellow("No users found."));
-			}
-		});
+					if (FLAGS.signout) {
+						await service.users.signOut({
+							userKey: user.id,
+						});
+						amountOfRequest++;
+					}
+				} catch (err) {
+					console.error(
+						chalk.redBright("An error occured: " + err)
+					);
+					process.exit(1);
+				}
+				i++;
+				await sleep(1000);
+				statusBar.update(i);
+			});
+			statusBar.stop();
+			console.log(chalk.white.bgGreenBright("Finished!"));
+			process.exit(0);
+		} else {
+			console.log(chalk.white.bgYellow("No users found."));
+		}
 	} else {
 		const statusBar = new cliProgress.SingleBar(
 			{},

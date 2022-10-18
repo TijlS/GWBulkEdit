@@ -10,7 +10,9 @@
     "googleapis": "^105.0.0",
     "inquirer": "^8.2.2",
     "nodemon": "^2.0.19",
+    "smartschool-client": "github:johancoppens/smartschool-client",
     "socket.io": "^4.5.1",
+    "sqlite3": "^5.0.11",
     "yargs": "^17.4.0"
   },
   "type": "module",

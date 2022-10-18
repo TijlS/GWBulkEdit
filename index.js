@@ -4,12 +4,12 @@ import { google } from "googleapis";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-
 import { authorize } from "./functions/auth.js";
 import updateUsersPrimaryEmail from "./functions/updateUsersPrimaryEmail.js";
-import saveUsersToLocalFile from "./functions/saveUsersToLocalFile.js";
+import saveUsersToLocalFile from "./functions/saveUsersToLocalDB.js";
 import clearlocalFiles from "./functions/clearLocalFiles.js";
 import removeGroups from "./functions/removeGroups.js";
+import { saveSMSCUsersToJson } from "./functions/smartschoolHandler.js";
 
 const whatQuestion = [
 	{
@@ -18,12 +18,14 @@ const whatQuestion = [
 		choices: [
 			new inquirer.Separator('USERS'),
 			"Change users primary email",
-			"Save users to local file",
+			"Save users to local database",
 			new inquirer.Separator('GROUPS'),
 			"Manage organization groups",
 			"Remove all users from all groups",
+			new inquirer.Separator('SMARTSCHOOL'),
+			"Save all SMSC users to JSON file",
 			new inquirer.Separator('CONFIG'),
-			"Clear all files in generated directory"
+			"Clear all files in generated directory",
 		],
 		name: "what",
 		
@@ -33,12 +35,14 @@ const whatQuestion = [
 					return 1;
 				case "Manage organization groups":
 					return 2;
-				case "Save users to local file":
+				case "Save users to local database":
 					return 3;
 				case "Clear all files in config directory":
 					return 4;
 				case "Remove all users from all groups":
 					return 5;
+				case "Save all SMSC users to JSON file":
+					return 6;
 			}
 		},
 	},
@@ -146,12 +150,12 @@ const FLAGS = yargs(hideBin(process.argv))
 authorize().then(aksQuestions)
 
 /**
- * Lists the first 10 users in the domain.
+ * Start the inquirer process
  *
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
  */
 function aksQuestions(auth) {
-	const service = google.admin({ version: "directory_v1", auth });
+	const service = google.admin({ version: "directory_v1", auth, timeout: 1000 });
 
 	inquirer.prompt(whatQuestion).then((answers) => {
 		if (answers.what == 1) {
@@ -181,6 +185,8 @@ function aksQuestions(auth) {
 			clearlocalFiles()
 		} else if (answers.what == 5) {
 			removeGroups(service, FLAGS)
+		} else if (answers.what == 6){
+			saveSMSCUsersToJson()
 		}
 	});
 }
