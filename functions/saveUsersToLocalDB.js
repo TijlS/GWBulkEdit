@@ -101,7 +101,7 @@ const saveUsersToLocalFile = async (service, FLAGS) => {
 					)
 				`);
 				const sql = db.prepare(
-					"INSERT INTO saved_users VALUES (?), (?), (?), (?), (?), (?), (?), (?), (?)"
+					"INSERT INTO saved_users VALUES (?), (?), (?), (?), (?), (?), (?), (?), (?), (?)"
 				);
 				users.forEach((user) => {
 					sql.run(
