@@ -1,0 +1,38 @@
+<%- include('inc/head.ejs',
+{links:[{rel:'stylesheet',href:'/css/pages/view.css'}, { rel: 'stylesheet',
+href:'https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css' }, {
+rel:'stylesheet', href:
+'https://cdn.datatables.net/1.13.1/css/dataTables.bulma.min.css' }], body_class:
+'layout_1'}) %>
+<main>
+	<div class="card gloss">
+		<h1 class="title"><a href="/">Terug</a>&ensp;|&ensp;Table: <i><%= current_table %></i></h1>
+        <div class="table-container">
+            <table class="table is-striped" id="dt" style="max-width: 100%;">
+                <thead>
+                    <tr>
+                        <% columns.forEach(column => { %>
+                        <th><%= column.name %></th>
+                        <% }) %>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% data.forEach(d => { %>
+                    <tr>
+                        <% for(const el in d) { %>
+                        <td><%= d[el] %></td>
+                        <% } %>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+	</div>
+</main>
+
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.1/js/dataTables.bulma.min.js"></script>
+<script>
+	$("#dt").DataTable();
+</script>

@@ -10,6 +10,7 @@ import saveUsersToLocalFile from "./functions/saveUsersToLocalDB.js";
 import clearlocalFiles from "./functions/clearLocalFiles.js";
 import removeGroups from "./functions/removeGroups.js";
 import { saveSMSCUsersToJson } from "./functions/smartschoolHandler.js";
+import { startDbViewer } from "./functions/dbViewer.js";
 
 const whatQuestion = [
 	{
@@ -26,6 +27,8 @@ const whatQuestion = [
 			"Save all SMSC users to JSON file",
 			new inquirer.Separator('CONFIG'),
 			"Clear all files in generated directory",
+			new inquirer.Separator('DATABASE'),
+			"View database online",
 		],
 		name: "what",
 		
@@ -43,6 +46,8 @@ const whatQuestion = [
 					return 5;
 				case "Save all SMSC users to JSON file":
 					return 6;
+				case "View database online":
+					return 7;
 			}
 		},
 	},
@@ -187,6 +192,8 @@ function aksQuestions(auth) {
 			removeGroups(service, FLAGS)
 		} else if (answers.what == 6){
 			saveSMSCUsersToJson()
+		} else if (answers.what == 7){
+			startDbViewer()
 		}
 	});
 }

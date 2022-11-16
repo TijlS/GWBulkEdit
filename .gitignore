@@ -12,5 +12,6 @@ config/database.db
 
 # test files
 test.js
+dev/*
 
 .prettierrc
