@@ -3,9 +3,9 @@
   max-height: 90vh !important;
 }
 .card .table-container {
-  max-width: 100%;
   max-height: 70vh;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /*# sourceMappingURL=view.css.map */

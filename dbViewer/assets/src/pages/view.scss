@@ -3,9 +3,9 @@
     max-height: 90vh !important;
 
     .table-container{
-        max-width: 100%;
         max-height: 70vh;
 
-        overflow: auto;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 }
