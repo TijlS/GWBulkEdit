@@ -38,8 +38,8 @@ a:has(.btn) {
 }
 
 .btn {
-  padding: 0.75em 1.5em;
-  font-size: 18px;
+  padding: 0.5em 1.25em;
+  font-size: 20px;
   border-radius: 7.5px;
   outline: none;
   border: none;

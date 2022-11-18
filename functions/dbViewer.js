@@ -38,7 +38,8 @@ app.get("/viewer/:table", (req, res) => {
 	res.render("viewer", {
 		current_table: req.params.table,
 		columns: getColumnNames(req.params.table),
-        data: getData(req.params.table)
+        data: getData(req.params.table),
+		raw: req.query.raw
 	});
 });
 
