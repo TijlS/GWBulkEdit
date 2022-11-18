@@ -1,0 +1,11 @@
+.card {
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+}
+.card .table-container {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/*# sourceMappingURL=view.css.map */

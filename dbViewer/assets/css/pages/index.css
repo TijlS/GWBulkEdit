@@ -1,0 +1,8 @@
+.list {
+  max-width: 25vw;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/*# sourceMappingURL=index.css.map */

@@ -50,7 +50,7 @@ const removeGroups = async (service, flags) => {
 		}
 		await service.users.list(searchQuery, (err, res) => {
 			if (err)
-				return console.error("The API returned an error:", err.message);
+				return console.error(chalk.redBright("The API returned an error:", err.message));
 
 			const users = res.data.users;
 			const statusBar = new cliProgress.SingleBar(
@@ -69,9 +69,9 @@ const removeGroups = async (service, flags) => {
 					JSON.stringify(users),
 					(err) => {
 						if (err)
-							return console.error(
+							return console.error(chalk.redBright(
 								"The API returned an error:",
-								err.message
+								err.message)
 							);
 						statusBar.increment(1);
 						statusBar.stop();

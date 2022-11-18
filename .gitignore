@@ -5,11 +5,13 @@ node_modules/
 .env
 .env.*
 
-generated/
+generated/*.*
 config/credentials.json
 config/token.json
+config/database.db
 
 # test files
 test.js
+dev/*
 
 .prettierrc

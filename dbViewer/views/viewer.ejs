@@ -1,0 +1,81 @@
+<%- include('inc/head.ejs',
+{links:[{rel:'stylesheet',href:'/css/pages/view.css'}, { rel: 'stylesheet',
+href:'https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css' }, {
+rel:'stylesheet', href:
+'https://cdn.datatables.net/1.13.1/css/dataTables.bulma.min.css' }], body_class:
+raw ? '':'layout_1'}) %> <% if (!raw) { %>
+<main>
+	<div class="card gloss">
+		<h1 class="title">
+			<a href="/">Back</a>&ensp;|&ensp;<a href="?raw=true">Fullscreen</a
+			>&ensp;|&ensp;Table: <i><%= current_table %></i>
+		</h1>
+		<div class="table-container">
+			<table class="table is-striped" id="dt" style="max-width: 100%">
+				<thead>
+					<tr>
+						<% columns.forEach(column => { %>
+						<th><%= column.name %></th>
+						<% }) %>
+					</tr>
+				</thead>
+				<tbody>
+					<% data.forEach(d => { %>
+					<tr>
+						<% for(const el in d) { %>
+						<td><%= d[el] %></td>
+						<% } %>
+					</tr>
+					<% }) %>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</main>
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.1/js/dataTables.bulma.min.js"></script>
+<script>
+	$("#dt").DataTable({
+		scrollX: true,
+		scrollY: (innerHeight / 100) * 50,
+	});
+</script>
+<% }else{ %>
+<style>
+    body{
+        padding: 1em;
+    }
+</style>
+<h1 class="title">
+	<a href="/">Back</a>&ensp;|&ensp;<a href="./<%= current_table %>">Disable fullscreen</a
+	>&ensp;|&ensp;Table: <i><%= current_table %></i>
+</h1>
+<table class="table is-striped" id="dt" style="max-width: 100vw">
+	<thead>
+		<tr>
+			<% columns.forEach(column => { %>
+			<th><%= column.name %></th>
+			<% }) %>
+		</tr>
+	</thead>
+	<tbody>
+		<% data.forEach(d => { %>
+		<tr>
+			<% for(const el in d) { %>
+			<td><%= d[el] %></td>
+			<% } %>
+		</tr>
+		<% }) %>
+	</tbody>
+</table>
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.1/js/dataTables.bulma.min.js"></script>
+<script>
+	$("#dt").DataTable({
+        scrollX: true,
+        scrollY: innerHeight - 250
+	});
+</script>
+<% } %>
