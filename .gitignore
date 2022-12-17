@@ -9,6 +9,7 @@ generated/*.*
 config/credentials.json
 config/token.json
 config/database.db
+config/config.json
 
 # test files
 test.js

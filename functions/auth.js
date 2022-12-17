@@ -11,6 +11,7 @@ const SCOPES = [
 	"https://www.googleapis.com/auth/admin.directory.group.member",
 	"https://www.googleapis.com/auth/admin.directory.orgunit",
 	"https://www.googleapis.com/auth/admin.directory.userschema",
+	"https://www.googleapis.com/auth/admin.directory.domain.readonly"
 ];
 const TOKEN_PATH = path.join(cwd(), "config/token.json");
 const CREDENTIALS_PATH = path.join(cwd(), "config/credentials.json");
