@@ -1,8 +1,9 @@
 import chalk from "chalk";
 import cliProgress from "cli-progress";
 import inquirer from "inquirer";
+import { domainChooser } from "../helpers/domain_org_chooser.js";
 
-const removeGroups = async (service, flags) => {
+const removeGroups = async (service, FLAGS) => {
 	let fromDomain = false;
 	let domainName;
 	await inquirer
@@ -15,30 +16,7 @@ const removeGroups = async (service, flags) => {
 		.then(async (answers) => {
 			if (answers.selectFromDomain == true) {
 				fromDomain == true;
-				await inquirer
-					.prompt({
-						type: "input",
-						name: "domainName",
-						message: "Domainname",
-						/**
-						 *
-						 * @param {String} input
-						 */
-						validate: function (input) {
-							let done = this.async();
-
-							setTimeout(() => {
-								if (!input.includes(".")) {
-									done("Please provide valid domain");
-									return;
-								}
-								done(null, true);
-							}, 500);
-						},
-					})
-					.then((answers) => {
-						domainName == answers.domainName;
-					});
+				domainName = await domainChooser()
 			}
 		});
 	if (FLAGS.dev !== true) {

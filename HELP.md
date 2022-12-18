@@ -37,6 +37,7 @@ Click on *Add or remove scopes* and search for *admin.directory.user*. Tick the 
 > - `../auth/admin.directory.group.member`
 > - `../auth/admin.directory.orgunit`
 > - `../auth/admin.directory.userschema`
+> - `../auth/admin.directory.domain.readonly`
 
 
 #### 10. ![Step 10](public/images/setup/step10.png?raw=true)

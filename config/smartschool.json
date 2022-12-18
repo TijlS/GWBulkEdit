@@ -1,3 +1,4 @@
 {
-    "init": false
+    "apiWSDL": "https://<jouwschool>.smartschool.be/Webservices/V3?wsdl",
+    "accessCode": "<jouw_api_access_code>"
 }

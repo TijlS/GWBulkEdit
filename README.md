@@ -13,15 +13,16 @@ Usefull links:
 ## Setup (see [HELP.md](HELP.md))
 1) run ` git clone https://github.com/TijlS/GWBulkEdit.git` to a folder
 2) Run `npm install`
-3) Create a project on Google Cloud and enable the 'Admin SDK API' 
+3) Rename `config/config.sample.json` to `config/config.json`
+4) Create a project on Google Cloud and enable the 'Admin SDK API' 
     (https://developers.google.com/workspace/guides/create-project) 
-4) Authorization credentials for a desktop application. 
+5) Authorization credentials for a desktop application. 
     (https://developers.google.com/workspace/guides/create-credentials#desktop-app) 
     ([HELP.md](HELP.md))
-5) Place the credentials.json in this folder
-6) Make sure the Google Workspace domain has API access enabled 
+6) Place the credentials.json in this folder
+7) Make sure the Google Workspace domain has API access enabled 
     (https://support.google.com/a/answer/60757) 
-7) Sign in with the Google Workspace administrator account
+8) Sign in with the Google Workspace administrator account
 
 ## Instructions
 1) Make sure that the credentials.json is in the `config/` folder

@@ -8,33 +8,54 @@ const sleep = (time) => {
 	return new Promise((resolve) => setTimeout(resolve, time));
 };
 
-const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
-	let keepOldDomainAsAlias = true;
+const updateUsersPrimaryEmail = async (
+	domainOrOrgName,
+	service,
+	queryType,
+	FLAGS
+) => {
+	const inquirerAnswers = await inquirer.prompt([
+		{
+			type: "input",
+			message: "To wich domain do you want to transfer them?",
+			name: "newDomain",
+			/**
+			 *
+			 * @param {String} input
+			 */
+			validate: function (input) {
+				let done = this.async();
 
-	await inquirer
-		.prompt({
+				setTimeout(() => {
+					if (
+						!input.includes(".")
+					) {
+						done("Please provide valid domain");
+						return;
+					}
+					done(null, true);
+				}, 500);
+			},
+		},
+		{
 			type: "confirm",
 			name: "keepOldDomainAsAlias",
 			message: "Keep the old domain as an alias?",
 			default: true,
-		})
-		.then((a) => {
-			if (a.keepOldDomainAsAlias == false) {
-				keepOldDomainAsAlias = false;
-			}
-		});
+		}]
+	);
 
 	let query = {};
 	switch (queryType) {
 		case 1:
-			query = { domain: answers.domainName };
+			query = { domain: domainOrOrgName };
 			break;
 		case 1:
-			query = { query: { orgUnitPath: answers.organisationName } };
+			query = { query: { orgUnitPath: domainOrOrgName } };
 			break;
 	}
 	if (FLAGS.dev !== true) {
-		const users = await getUsers(query, service)
+		const users = await getUsers(query, service);
 
 		const statusBar = new cliProgress.SingleBar(
 			{},
@@ -55,10 +76,10 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 						console.warn(
 							chalk.white.bold.bgYellow("WARNING: ") +
 								chalk.white(
-									"The default limit of 2400 request per minute is almost reached. To make sure that everything will be completed, the program will wait for 100 seconds."
+									"The default limit of 2400 request per minute is almost reached. To make sure that everything will be completed, the program will wait for 30 seconds."
 								)
 						);
-						sleep(100000);
+						sleep(30000);
 						amountOfRequest = 0;
 					}
 
@@ -68,7 +89,7 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 					});
 					amountOfRequest++;
 
-					if (keepOldDomainAsAlias) {
+					if (inquirerAnswers.keepOldDomainAsAlias) {
 						await service.users.aliases.insert({
 							userKey: user.id,
 							requestBody: {
@@ -84,9 +105,7 @@ const updateUsersPrimaryEmail = async (answers, service, queryType, FLAGS) => {
 						amountOfRequest++;
 					}
 				} catch (err) {
-					console.error(
-						chalk.redBright("An error occured: " + err)
-					);
+					console.error(chalk.redBright("An error occured: " + err));
 					process.exit(1);
 				}
 				i++;
