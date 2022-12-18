@@ -1,5 +1,6 @@
 {
     "is_first_time": true,
     "smsc_enabled": false,
+    "domain_prefetch_enabled": false,
     "owned_domains": []
 }
