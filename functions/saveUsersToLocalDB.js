@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import fs from "fs";
 import inquirer from "inquirer";
 import sqlite from "sqlite3";
+import { domainChooser } from "../helpers/domain_org_chooser.js";
 
 import { getUsers } from "./getUsers.js";
 
@@ -24,31 +25,13 @@ const askDomain = async () => {
 			ans.selectFromDomain = answers.selectFromDomain
 			if (answers.selectFromDomain == true) {
 				fromDomain == true;
-				await inquirer
-					.prompt({
-						type: "input",
-						name: "domainName",
-						message: "Domainname",
-						/**
-						 *
-						 * @param {String} input
-						 */
-						validate: function (input) {
-							let done = this.async();
 
-							setTimeout(() => {
-								if (!input.includes(".")) {
-									done("Please provide valid domain");
-									return;
-								}
-								done(null, true);
-							}, 500);
-						},
-					})
-					.then((answers) => {
-						ans.domainName = answers.domainName
-						domainName == answers.domainName;
-					});
+				const domain = await domainChooser()
+
+				ans.domainName = domain
+				domainName = domain
+
+				
 			}
 		});
 
@@ -74,6 +57,7 @@ const saveUsersToLocalFile = async (service, FLAGS) => {
 		if (fromDomain == true) {
 			searchQuery = {
 				domain: domainName,
+				maxResults: 500
 			};
 		}
 		const users = await getUsers(searchQuery, service)

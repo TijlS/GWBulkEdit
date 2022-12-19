@@ -1,32 +1,29 @@
 import chalk from "chalk";
 
 /**
- * 
+ *
  * @param {Object} query The searchQuery
- * @param {google.admin} service 
+ * @param {google.admin} service
  * @returns {Array} An array of users
  */
 export const getUsers = async (query, service) => {
-    let result = []
-    let nextPageToken = "START";
+    
+	let res = [];
+	const requestPages = async (options) => {
+		try {
+			const pageRes = await service.users.list(options);
+			res = [...res, ...pageRes.data.users];
+			if (pageRes.data.nextPageToken) {
+				options.pageToken = pageRes.data.nextPageToken;
+				await requestPages(options);
+			}
+		} catch (err) {
+			console.error(chalk.redBright(`An error occured: ${err}`));
+			process.exit(0);
+		}
+	};
 
-    while (nextPageToken !== null) {
-        if(nextPageToken !== "START"){
-            query.pageToken = nextPageToken
-        }
-        let res;
-        try {
-            res = await service.users.list(query)
-        } catch (error) {
-            console.error(
-                chalk.redBright(`An error occured: ${error}`)
-            )
-            process.exit(0)
-        }
-        const users = res.data.users
-        result.push(users)
-        nextPageToken = res.data.nextPageToken !== "" ? res.data.nextPageToken : null
-    }
+	await requestPages(query);
 
-    return result
-}
+	return res;
+};
