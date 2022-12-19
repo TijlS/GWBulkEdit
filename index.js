@@ -99,6 +99,9 @@ authorize().then(startProgram);
  * @param {OAuth2Client} auth
  */
 async function startProgram(auth) {
+	//Clear console
+	console.clear()
+
 	//Create Google Admin Service
 	const service = google.admin({
 		version: "directory_v1",
@@ -138,7 +141,7 @@ For using Smartschool, some extra configuration is needed.
 	Preferably create a custom profile there
 2. Edit ${chalk.italic(
 						"config/smartschool.json"
-					)} and fill in the required fields.		
+					)} and fill in the required fields.
 			`);
 					const smsc_config_answers = await inquirer.prompt({
 						type: "confirm",
@@ -175,7 +178,7 @@ ${chalk.greenBright("Done!")}
 		}
 		console.log(`
 ${chalk.greenBright("Configuration succeeded!")}
-The application will stop now, please restart it.			
+The application will stop now, please restart it.
 		`);
 
 		config.is_first_time = false;
@@ -219,10 +222,11 @@ async function aksQuestions(service) {
 		const query_type_answers = await inquirer.prompt(queryTypeQuestion);
 		if (query_type_answers.queryType == 1) {
 			const domain = await domainChooser();
-			updateUsersPrimaryEmail(domain, service, 1, FLAGS);
+			updateUsersPrimaryEmail(domain, null, service, 1, FLAGS);
 		} else if (query_type_answers.queryType == 2) {
+			const domain = await domainChooser();
 			const orgPath = await orgChooser();
-			updateUsersPrimaryEmail(orgPath, service, 2, FLAGS);
+			updateUsersPrimaryEmail(domain, orgPath, service, 2, FLAGS);
 		}
 	} else if (what_question_answers.what === "manage_groups") {
 		groupProvisioning(service)

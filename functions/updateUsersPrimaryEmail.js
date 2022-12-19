@@ -3,13 +3,19 @@ import chalk from "chalk";
 import cliProgress from "cli-progress";
 
 import { getUsers } from "./getUsers.js";
+import { admin_directory_v1 } from "googleapis";
 
 const sleep = (time) => {
 	return new Promise((resolve) => setTimeout(resolve, time));
 };
 
+/**
+ *
+ *  @param {admin_directory_v1.Admin} service An authorized OAuth2 client.
+ */
 const updateUsersPrimaryEmail = async (
-	domainOrOrgName,
+	domain,
+	orgUnitPath,
 	service,
 	queryType,
 	FLAGS
@@ -36,22 +42,16 @@ const updateUsersPrimaryEmail = async (
 					done(null, true);
 				}, 500);
 			},
-		},
-		{
-			type: "confirm",
-			name: "keepOldDomainAsAlias",
-			message: "Keep the old domain as an alias?",
-			default: true,
 		}]
 	);
 
 	let query = {};
 	switch (queryType) {
 		case 1:
-			query = { domain: domainOrOrgName };
+			query = { domain: domain };
 			break;
-		case 1:
-			query = { query: { orgUnitPath: domainOrOrgName } };
+		case 2:
+			query = { query: `orgUnitPath=/${orgUnitPath}`, viewType: "admin_view", domain: domain };
 			break;
 	}
 	if (FLAGS.dev !== true) {
@@ -64,12 +64,12 @@ const updateUsersPrimaryEmail = async (
 		let i = 0;
 		let amountOfRequest = 0;
 		if (users.length) {
-			statusBar.start(users.length, 0);
-			users.forEach(async (user) => {
+			// statusBar.start(users.length, 0);
+			for (const user of users) {
 				let oldEmail = user.primaryEmail;
 				let oldEmailSplit = oldEmail.split("@");
 
-				user.primaryEmail = `${oldEmailSplit[0]}@${answers.newDomain}`;
+				let newEmail = `${oldEmailSplit[0]}@${inquirerAnswers.newDomain}`;
 
 				try {
 					if (amountOfRequest >= 2350) {
@@ -85,19 +85,13 @@ const updateUsersPrimaryEmail = async (
 
 					await service.users.update({
 						userKey: user.id,
-						requestBody: user,
+						requestBody: {
+							primaryEmail: newEmail,
+						},
 					});
+					console.log(`${chalk.gray('Update:')} ${user.name.fullName}'s email changed to ${newEmail}`)
 					amountOfRequest++;
 
-					if (inquirerAnswers.keepOldDomainAsAlias) {
-						await service.users.aliases.insert({
-							userKey: user.id,
-							requestBody: {
-								alias: oldEmail,
-							},
-						});
-						amountOfRequest++;
-					}
 					if (FLAGS.signout) {
 						await service.users.signOut({
 							userKey: user.id,
@@ -109,10 +103,10 @@ const updateUsersPrimaryEmail = async (
 					process.exit(1);
 				}
 				i++;
-				await sleep(1000);
-				statusBar.update(i);
-			});
-			statusBar.stop();
+				// await sleep(1000);
+				// statusBar.update(i);
+			};
+			// statusBar.stop();
 			console.log(chalk.white.bgGreenBright("Finished!"));
 			process.exit(0);
 		} else {

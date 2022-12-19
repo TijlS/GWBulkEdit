@@ -5,7 +5,6 @@ import fs from "fs";
 import inquirer from "inquirer";
 import sqlite from "sqlite3";
 import { domainChooser } from "../helpers/domain_org_chooser.js";
-
 import { getUsers } from "./getUsers.js";
 
 const db = new sqlite.Database(`config/database.db`);
@@ -25,13 +24,10 @@ const askDomain = async () => {
 			ans.selectFromDomain = answers.selectFromDomain
 			if (answers.selectFromDomain == true) {
 				fromDomain == true;
-
 				const domain = await domainChooser()
 
 				ans.domainName = domain
 				domainName = domain
-
-				
 			}
 		});
 
@@ -57,7 +53,6 @@ const saveUsersToLocalFile = async (service, FLAGS) => {
 		if (fromDomain == true) {
 			searchQuery = {
 				domain: domainName,
-				maxResults: 500
 			};
 		}
 		const users = await getUsers(searchQuery, service)
@@ -69,7 +64,6 @@ const saveUsersToLocalFile = async (service, FLAGS) => {
 		if (users.length) {
 			statusBar.start(1, 0);
 
-			// TODO: make DB a config option
 			// db.serialize(() => {
 			// 	db.run(`
 			// 		CREATE TABLE IF NOT EXISTS saved_users (
@@ -119,7 +113,7 @@ const saveUsersToLocalFile = async (service, FLAGS) => {
 						);
 					statusBar.increment(1);
 					statusBar.stop();
-					console.log(chalk.bgGreenBright("Finished!"));
+					console.log(chalk.white.bgGreenBright("Finished!"));
 					process.exit(0);
 				}
 			);

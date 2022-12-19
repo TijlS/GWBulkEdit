@@ -55,7 +55,7 @@ export async function domainChooser() {
 }
 
 export async function orgChooser() {
-	inquirerPrompt = {
+	let inquirerPrompt = {
 		type: "input",
 		message:
 			"Enter the organisation path from wich you want to get the users",

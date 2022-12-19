@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import SMSC_CONF from "../config/smartschool.json" assert { type: 'json' }
 
 const initSMSC = async () => {
-    await SMSC.init(SMSC_CONF)   
+    await SMSC.init(SMSC_CONF)
 }
 
 export const saveSMSCUsersToJson = async () => {
@@ -33,9 +33,9 @@ export const saveSMSCUsersToJson = async () => {
 }
 
 export const getClasses = async (official) => {
-    try{
+    try {
         await initSMSC()
-    
+
         const options = {
             transformation: {
                 id: 'id',
@@ -45,11 +45,11 @@ export const getClasses = async (official) => {
                 official: 'isOfficial'
             }
         }
-    
+
         const res = await SMSC.getClasses(options)
-    
+
         return res.filter(c => {
-            if(official) return c.official
+            if (official) return c.official
         })
     } catch (e) {
         console.log(e)
@@ -57,7 +57,7 @@ export const getClasses = async (official) => {
 }
 
 export const getUsersInClass = async (classCode) => {
-    try{
+    try {
         await initSMSC()
 
         const options = {
@@ -74,7 +74,7 @@ export const getUsersInClass = async (classCode) => {
 }
 
 export const getClassesWithUsers = async () => {
-    try{
+    try {
         await initSMSC()
 
         const res = []
@@ -91,12 +91,12 @@ export const getClassesWithUsers = async () => {
                     }
                 })
             })
-            
+
         }
 
         return res
 
-    }catch (e) {
+    } catch (e) {
         console.log(e)
     }
 }
