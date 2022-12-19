@@ -18,6 +18,7 @@ import { startDbViewer } from "./functions/dbViewer.js";
 
 import config from "./config/config.json" assert { type: "json" };
 import { domainChooser, orgChooser } from "./helpers/domain_org_chooser.js";
+import { groupProvisioning } from "./functions/groupProvisioning.js";
 
 const whatQuestion = [
 	{
@@ -45,7 +46,7 @@ const whatQuestion = [
 			new inquirer.Separator("SMARTSCHOOL"),
 			{
 				name: "Save all SMSC users to JSON file",
-				value: "smscs_all_to_json",
+				value: "smsc_all_to_json",
 			},
 			new inquirer.Separator("CONFIG"),
 			{
@@ -189,7 +190,6 @@ The application will stop now, please restart it.
 	}
 
 	//Domain prefetching
-	// TODO: Needs testing!
 	if (config.domain_prefetch_enabled) {
 		const domains = (
 			await service.domains.list({
@@ -225,17 +225,14 @@ async function aksQuestions(service) {
 			updateUsersPrimaryEmail(orgPath, service, 2, FLAGS);
 		}
 	} else if (what_question_answers.what === "manage_groups") {
-		console.warn(
-			chalk.white.bgYellow(" Warning! This feature is in development ")
-		);
-		process.exit(1);
+		groupProvisioning(service)
 	} else if (what_question_answers.what === "save_to_db") {
 		saveUsersToLocalFile(service, FLAGS);
 	} else if (what_question_answers.what === "clear_generated") {
 		clearlocalFiles();
 	} else if (what_question_answers.what === "empty_groups") {
 		removeGroups(service, FLAGS);
-	} else if (what_question_answers.what === "smscs_all_to_json") {
+	} else if (what_question_answers.what === "smsc_all_to_json") {
 		saveSMSCUsersToJson();
 	} else if (what_question_answers.what === "db_viewer") {
 		startDbViewer();

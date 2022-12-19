@@ -1,30 +1,16 @@
 import chalk from "chalk"
 import SMSC from "smartschool-client"
 import fs from "fs/promises"
-import path from "path";
-import { cwd } from "process"
 import dayjs from "dayjs";
 
-const CONFIG_PATH = path.join(cwd(), "config/smartschool.json");
+import SMSC_CONF from "../config/smartschool.json" assert { type: 'json' }
 
-const getSMSCConfig = async () => {
-    const conf_raw = await fs.readFile(CONFIG_PATH)
-    const conf = JSON.parse(conf_raw)
-    if(!conf.init){
-        console.error(chalk.redBright(`
-ERROR! Smartschool webservice not initiated! 
-Edit the config file in config/smartschool.json 
-The following properties are required:\n
-${chalk.italic.gray(`\`apiWSDL: 'https://<jouwschool>.smartschool.be/Webservices/V3?wsdl'\`,
-\`accessCode: '<api_access_code>'\``)}`))
-        return process.exit(1)
-    }
-
-    await SMSC.init(conf)   
+const initSMSC = async () => {
+    await SMSC.init(SMSC_CONF)   
 }
 
 export const saveSMSCUsersToJson = async () => {
-    await getSMSCConfig()
+    await initSMSC()
 
     const users = await SMSC.getUsers()
 
@@ -46,23 +32,77 @@ export const saveSMSCUsersToJson = async () => {
     })
 }
 
-const getClassess = async () => {
-    const options = {
-        transformation: {
-            id: 'id',
-            name: 'name',
-            code: 'code',
-            description: 'desc'
+export const getClasses = async (official) => {
+    try{
+        await initSMSC()
+    
+        const options = {
+            transformation: {
+                id: 'id',
+                name: 'name',
+                code: 'code',
+                description: 'desc',
+                official: 'isOfficial'
+            }
         }
+    
+        const res = await SMSC.getClasses(options)
+    
+        return res.filter(c => {
+            if(official) return c.official
+        })
+    } catch (e) {
+        console.log(e)
     }
+}
 
-    const res = await SMSC.getClasses(options)
+export const getUsersInClass = async (classCode) => {
+    try{
+        await initSMSC()
 
-    return res
+        const options = {
+            groupId: classCode,
+            recursive: false
+        }
+
+        const res = await SMSC.getUsers(options)
+
+        return res
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+export const getClassesWithUsers = async () => {
+    try{
+        await initSMSC()
+
+        const res = []
+
+        const classes = await getClasses(true)
+        for (const c of classes) {
+            const users = await getUsersInClass(c.code)
+            res.push({
+                className: c.name,
+                classCode: c.code,
+                users: users.map(user => {
+                    return {
+                        username: user.gebruikersnaam,
+                    }
+                })
+            })
+            
+        }
+
+        return res
+
+    }catch (e) {
+        console.log(e)
+    }
 }
 
 export const getSMSCUserFromGoogle = async (user) => {
-    await getSMSCConfig()
+    await initSMSC()
 
     const options = {
         userId: user.username
