@@ -19,6 +19,7 @@ import { startDbViewer } from "./functions/dbViewer.js";
 import config from "./config/config.json" assert { type: "json" };
 import { domainChooser, orgChooser } from "./helpers/domain_org_chooser.js";
 import { groupProvisioning } from "./functions/groupProvisioning.js";
+import { photoProvisioning } from "./functions/photoProvisioning.js";
 
 const whatQuestion = [
 	{
@@ -34,10 +35,14 @@ const whatQuestion = [
 				name: "Save users to local database",
 				value: "save_to_db",
 			},
-			new inquirer.Separator("GROUPS"),
+			new inquirer.Separator("Provisioning"),
 			{
 				name: "Manage organization groups",
 				value: "manage_groups",
+			},
+			{
+				name: "Provision user profile pictures",
+				value: "provision_profile_pictures",
 			},
 			{
 				name: "Remove all users from groups",
@@ -240,5 +245,7 @@ async function aksQuestions(service) {
 		saveSMSCUsersToJson();
 	} else if (what_question_answers.what === "db_viewer") {
 		startDbViewer();
+	} else if (what_question_answers.what === "provision_profile_pictures") {
+		photoProvisioning(service)
 	}
 }

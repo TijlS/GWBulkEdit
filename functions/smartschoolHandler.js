@@ -14,11 +14,16 @@ export const saveSMSCUsersToJson = async () => {
 
     const users = await SMSC.getUsers()
 
-    let filename = `users_SMSC_${dayjs().format("DD-MM-YYYY_HH-mm")}`;
+    let filename = `users_SMSC@${dayjs().format("DD-MM-YYYY_HH-mm")}.json`;
 
     fs.writeFile(
-        `generated/${filename}`,
-        JSON.stringify(users)
+        `provisioning/${filename}`,
+        JSON.stringify(users.map(user => {
+            return {
+                username: user.gebruikersnaam,
+                internalId: user.internnummer,
+            }
+        }))
     ).catch(err => {
         return console.error(
             chalk.redBright(
@@ -88,6 +93,7 @@ export const getClassesWithUsers = async () => {
                 users: users.map(user => {
                     return {
                         username: user.gebruikersnaam,
+                        internalId: user.internnummer
                     }
                 })
             })
@@ -101,14 +107,15 @@ export const getClassesWithUsers = async () => {
     }
 }
 
-export const getSMSCUserFromGoogle = async (user) => {
-    await initSMSC()
+export const getUserProfilePicture = async (userId) => {
+    try {
+        await initSMSC()
 
-    const options = {
-        userId: user.username
+        const profilePicture = await SMSC.getUserPhoto({ userName: userId })
+
+        return profilePicture
+
+    } catch (e) {
+        console.log(e)
     }
-
-    const res = await SMSC.getUser(options)
-
-    return res
 }
