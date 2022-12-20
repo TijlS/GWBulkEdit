@@ -11,9 +11,11 @@ config/credentials.json
 config/token.json
 config/database.db
 config/config.json
+config/smartschool.json
 
 # test files
 test.js
 dev/*
+dev/
 
 .prettierrc

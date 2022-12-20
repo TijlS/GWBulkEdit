@@ -64,42 +64,6 @@ const saveUsersToLocalFile = async (service, FLAGS) => {
 		if (users.length) {
 			statusBar.start(1, 0);
 
-			// db.serialize(() => {
-			// 	db.run(`
-			// 		CREATE TABLE IF NOT EXISTS saved_users (
-			// 			uuid VARCHAR(255)
-			// 			primaryEmail VARCHAR(255)
-			// 			username VARCHAR(255)
-			// 			name JSON
-			// 			isAdmin BOOLEAN
-			// 			emails JSON
-			// 			aliases JSON
-			// 			nonEditableAliases JSON
-			// 			orgUnitPath TEXT
-			// 			updated VARCHAR(255)
-			// 		)
-			// 	`);
-			// 	const sql = db.prepare(
-			// 		"INSERT INTO saved_users VALUES (?), (?), (?), (?), (?), (?), (?), (?), (?), (?)"
-			// 	);
-			// 	users.forEach((user) => {
-			// 		sql.run(
-			// 			user.id,
-			// 			user.primaryEmail ?? "",
-			// 			user.username ?? "",
-			// 			JSON.stringify(user.name),
-			// 			user.isAdmin,
-			// 			JSON.stringify(user.emails),
-			// 			JSON.stringify(user.aliases),
-			// 			JSON.stringify(user.nonEditableAliases),
-			// 			user.orgUnitPath,
-			// 			dayjs().format("DD-MM-YYYY_HH-mm")
-			// 		);
-			// 	});
-			// 	sql.finalize();
-			// });
-			// db.close()
-
 			fs.writeFile(
 				`generated/${filename}`,
 				JSON.stringify(users, null, 4),

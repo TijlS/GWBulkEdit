@@ -1,0 +1,4 @@
+{
+    "apiWSDL": "https://<schoolname>.smartschool.be/Webservices/V3?wsdl",
+    "accessCode": "<API_KEY>"
+}
