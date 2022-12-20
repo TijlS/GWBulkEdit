@@ -41,6 +41,6 @@ Usefull links:
 
 
 
-> ### ⚠️ This is not tested on real data
+> ### ⚠️ New features may not work properly! If so, please create an issue
 
 © Tijl Schipper 2022
