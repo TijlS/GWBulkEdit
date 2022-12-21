@@ -1,7 +1,7 @@
 import chalk from "chalk"
 import { admin_directory_v1 } from "googleapis"
-import { getLatestProvisioningFile } from "../helpers/provisioningFiles"
-import { getUserProfilePicture } from "./smartschoolHandler"
+import { getLatestProvisioningFile } from "../helpers/provisioningFiles.js"
+import { getUserProfilePicture } from "./smartschoolHandler.js"
 
 
 /**

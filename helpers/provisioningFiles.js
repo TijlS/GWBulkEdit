@@ -1,14 +1,15 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import fs from "fs";
+import { admin_directory_v1 } from "googleapis";
 import path from "path";
 import { cwd } from "process";
-import { getUsers } from "../functions/getUsers.js"
 
 dayjs.extend(customParseFormat);
 
 const FILE_NAME_GROUPS = {
 	smsc_users: ["users_SMSC"],
+	google_users: ["users_GOOGLE"],
     combined_users: ['combined_users']
 };
 
@@ -55,11 +56,15 @@ export const updateProvisioningFile = async (fileName, content) => {
 	);
 };
 
+/**
+ * 
+ * @param {admin_directory_v1.Admin} service 
+ */
 export const combineUserProvisioningFiles = async (service) => {
     let output = []
 
-    const google_users = await getUsers({ customer: 'my_customer', service })
-    const smsc_users = getLatestProvisioningFile('smsc_users')
+    const google_users = (await getLatestProvisioningFile('google_users')).content
+    const smsc_users = (await getLatestProvisioningFile('smsc_users')).content
 
     for (const user of smsc_users) {
         const google_user = google_users.filter(u => u.username.split('@')[0] == user.username)

@@ -1,6 +1,4 @@
 import { admin_directory_v1 } from "googleapis"
-import fs from "fs"
-import dayjs from "dayjs";
 import chalk from "chalk";
 
 /**
@@ -66,7 +64,7 @@ export const getUsersInGroup = async (service, groupKey, groupName) => {
  *
  *  @param {admin_directory_v1.Admin} service An authorized OAuth2 client.
  */
-export const getGroupsWrithUsers = async (service) => {
+export const getGroupsWithUsers = async (service) => {
     let res = [];
 
     const groups = await getGoogleGroups(service)

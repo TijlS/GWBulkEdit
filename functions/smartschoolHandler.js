@@ -9,32 +9,12 @@ const initSMSC = async () => {
     await SMSC.init(SMSC_CONF)
 }
 
-export const saveSMSCUsersToJson = async () => {
+export const getSMSCUsers = async () => {
     await initSMSC()
 
     const users = await SMSC.getUsers()
 
-    let filename = `users_SMSC@${dayjs().format("DD-MM-YYYY_HH-mm")}.json`;
-
-    fs.writeFile(
-        `provisioning/${filename}`,
-        JSON.stringify(users.map(user => {
-            return {
-                username: user.gebruikersnaam,
-                internalId: user.internnummer,
-            }
-        }))
-    ).catch(err => {
-        return console.error(
-            chalk.redBright(
-                "The API returned an error:",
-                err.message
-            )
-        );
-    }).then(() => {
-        console.log(chalk.white.bgGreenBright("Finished!"));
-        return process.exit(0);
-    })
+    return users
 }
 
 export const getClasses = async (official) => {

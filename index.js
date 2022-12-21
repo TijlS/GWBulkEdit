@@ -13,13 +13,13 @@ import updateUsersPrimaryEmail from "./functions/updateUsersPrimaryEmail.js";
 import saveUsersToLocalFile from "./functions/saveUsersToLocalDB.js";
 import clearlocalFiles from "./functions/clearLocalFiles.js";
 import removeGroups from "./functions/removeGroups.js";
-import { saveSMSCUsersToJson } from "./functions/smartschoolHandler.js";
-import { startDbViewer } from "./functions/dbViewer.js";
+import { getSMSCUsers } from "./functions/smartschoolHandler.js";
 
 import config from "./config/config.json" assert { type: "json" };
 import { domainChooser, orgChooser } from "./helpers/domain_org_chooser.js";
 import { groupProvisioning } from "./functions/groupProvisioning.js";
 import { photoProvisioning } from "./functions/photoProvisioning.js";
+import { saveAllUsers } from "./functions/userProvisoning.js";
 
 const whatQuestion = [
 	{
@@ -37,6 +37,10 @@ const whatQuestion = [
 			},
 			new inquirer.Separator("Provisioning"),
 			{
+				name: "Save all users for provisioning",
+				value: "save_all_users",
+			},
+			{
 				name: "Manage organization groups",
 				value: "manage_groups",
 			},
@@ -50,18 +54,13 @@ const whatQuestion = [
 			},
 			new inquirer.Separator("SMARTSCHOOL"),
 			{
-				name: "Save all SMSC users to JSON file",
-				value: "smsc_all_to_json",
+				name: "Availible soon",
+				disabled: true
 			},
 			new inquirer.Separator("CONFIG"),
 			{
 				name: "Clear all files in generated directory",
 				value: "clear_generated",
-			},
-			new inquirer.Separator("DATABASE"),
-			{
-				name: "View database online",
-				value: "db_viewer",
 			},
 		],
 		name: "what",
@@ -241,11 +240,9 @@ async function aksQuestions(service) {
 		clearlocalFiles();
 	} else if (what_question_answers.what === "empty_groups") {
 		removeGroups(service, FLAGS);
-	} else if (what_question_answers.what === "smsc_all_to_json") {
-		saveSMSCUsersToJson();
-	} else if (what_question_answers.what === "db_viewer") {
-		startDbViewer();
 	} else if (what_question_answers.what === "provision_profile_pictures") {
 		photoProvisioning(service)
+	} else if (what_question_answers.what === "save_all_users"){
+		await saveAllUsers(service)
 	}
 }
