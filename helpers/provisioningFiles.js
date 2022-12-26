@@ -1,7 +1,6 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import fs from "fs";
-import { admin_directory_v1 } from "googleapis";
 import path from "path";
 import { cwd } from "process";
 
@@ -9,8 +8,10 @@ dayjs.extend(customParseFormat);
 
 const FILE_NAME_GROUPS = {
 	smsc_users: ["users_SMSC"],
+	smsc_classes: ["classes_SMSC"],
 	google_users: ["users_GOOGLE"],
-    combined_users: ['combined_users']
+    combined_users: ['combined_users'],
+	test: ["test_users"]
 };
 
 export const getProvisioningFiles = async (filter) => {
@@ -56,27 +57,22 @@ export const updateProvisioningFile = async (fileName, content) => {
 	);
 };
 
-/**
- * 
- * @param {admin_directory_v1.Admin} service 
- */
-export const combineUserProvisioningFiles = async (service) => {
+
+export const combineUserProvisioningFiles = async () => {
     let output = []
 
     const google_users = (await getLatestProvisioningFile('google_users')).content
     const smsc_users = (await getLatestProvisioningFile('smsc_users')).content
+	const smsc_classes_with_users = (await getLatestProvisioningFile('smsc_classes')).content
 
     for (const user of smsc_users) {
-        const google_user = google_users.filter(u => u.username.split('@')[0] == user.username)
+        const google_user = google_users.filter(u => u.email.split('@')[0].toLowerCase() == user.username.toLowerCase());
+		const officialClass = smsc_classes_with_users.find(c => c.users.some(u => u.internalId === user.internalId));
         output.push({
             name: user.username,
-            smartschool: {
-                internalId: user.internalId
-            },
-            google: {
-                email: google_user.username,
-                id: google_user.id
-            },
+			officialClass: officialClass?.classCode,
+            smartschool: user,
+            google: google_user,
             custom: {
                 photo_updated: false,
                 class_updated: false
@@ -84,10 +80,10 @@ export const combineUserProvisioningFiles = async (service) => {
         })
     }
 
-    let filename = `combined_users@${dayjs().format("DD-MM-YYYY_HH-mm")}`;
+    let filename = `combined_users@${dayjs().format("DD-MM-YYYY_HH-mm")}.json`;
 
     fs.writeFileSync(
 		path.join(cwd(), `provisioning/${filename}`),
-		JSON.stringify(content, null, 4)
+		JSON.stringify(output, null, 4)
 	);
 }

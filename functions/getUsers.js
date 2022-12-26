@@ -28,7 +28,11 @@ export const getUsers = async (query, service) => {
         }
     };
 
+    console.time('fetch_google')
+    console.log(`${chalk.gray.italic('Fetching all google users...')}`)
     await requestPages(query);
+    console.log(`${chalk.gray.italic('Done!')}`)
+    console.timeEnd('fetch_google')
 
     return res;
 };

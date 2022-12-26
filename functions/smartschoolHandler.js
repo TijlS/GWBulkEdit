@@ -12,9 +12,21 @@ const initSMSC = async () => {
 export const getSMSCUsers = async () => {
     await initSMSC()
 
+    console.time('fetch_smsc')
+    console.log(`${chalk.gray.italic('Fetching all SMSC users...')}`)
     const users = await SMSC.getUsers()
+    console.log(`${chalk.gray.italic(`Done`)}`)
+    console.timeEnd('fetch_smsc')
 
     return users
+}
+
+export const getUser = async (username) => {
+    await initSMSC()
+
+    const user = await SMSC.getUser({ userId: username })
+
+    return user
 }
 
 export const getClasses = async (official) => {
@@ -64,6 +76,8 @@ export const getClassesWithUsers = async () => {
 
         const res = []
 
+        console.time('fetch_smsc_classes')
+        console.log(`${chalk.gray.italic('Fetching all SMSC classes with users...')}`)
         const classes = await getClasses(true)
         for (const c of classes) {
             const users = await getUsersInClass(c.code)
@@ -79,6 +93,8 @@ export const getClassesWithUsers = async () => {
             })
 
         }
+        console.log(`${chalk.gray.italic(`Done`)}`)
+        console.timeEnd('fetch_smsc_classes')
 
         return res
 

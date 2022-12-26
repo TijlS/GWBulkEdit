@@ -13,13 +13,13 @@ import updateUsersPrimaryEmail from "./functions/updateUsersPrimaryEmail.js";
 import saveUsersToLocalFile from "./functions/saveUsersToLocalDB.js";
 import clearlocalFiles from "./functions/clearLocalFiles.js";
 import removeGroups from "./functions/removeGroups.js";
-import { getSMSCUsers } from "./functions/smartschoolHandler.js";
 
 import config from "./config/config.json" assert { type: "json" };
 import { domainChooser, orgChooser } from "./helpers/domain_org_chooser.js";
 import { groupProvisioning } from "./functions/groupProvisioning.js";
 import { photoProvisioning } from "./functions/photoProvisioning.js";
 import { saveAllUsers } from "./functions/userProvisoning.js";
+import { combineUserProvisioningFiles } from "./helpers/provisioningFiles.js";
 
 const whatQuestion = [
 	{
@@ -39,6 +39,10 @@ const whatQuestion = [
 			{
 				name: "Save all users for provisioning",
 				value: "save_all_users",
+			},
+			{
+				name: "Combine latest user provisioning files",
+				value: 'combine_newest_users'
 			},
 			{
 				name: "Manage organization groups",
@@ -241,8 +245,10 @@ async function aksQuestions(service) {
 	} else if (what_question_answers.what === "empty_groups") {
 		removeGroups(service, FLAGS);
 	} else if (what_question_answers.what === "provision_profile_pictures") {
-		photoProvisioning(service)
+		await photoProvisioning(service)
 	} else if (what_question_answers.what === "save_all_users"){
 		await saveAllUsers(service)
+	} else if (what_question_answers.what === "combine_newest_users"){
+		await combineUserProvisioningFiles()
 	}
 }

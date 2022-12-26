@@ -9,7 +9,8 @@ generated/*.*
 provisioning/*.*
 config/credentials.json
 config/token.json
-config/database.db
+config/credentials_*.json
+config/token_*.json
 config/config.json
 config/smartschool.json
 
