@@ -12,9 +12,21 @@ const initSMSC = async () => {
 export const getSMSCUsers = async () => {
     await initSMSC()
 
+    console.time('fetch_smsc')
+    console.log(`${chalk.gray.italic('Fetching all SMSC users...')}`)
     const users = await SMSC.getUsers()
+    console.log(`${chalk.gray.italic(`Done`)}`)
+    console.timeEnd('fetch_smsc')
 
     return users
+}
+
+export const getUser = async (username) => {
+    await initSMSC()
+
+    const user = await SMSC.getUser({ userId: username })
+
+    return user
 }
 
 export const getClasses = async (official) => {
@@ -33,13 +45,30 @@ export const getClasses = async (official) => {
 
         const res = await SMSC.getClasses(options)
 
-        return res.filter(c => {
-            if (official) return c.official
-        })
+        return res.filter(c => 
+            c.official == official
+        )
     } catch (e) {
         console.log(e)
     }
 }
+
+export const getGroups = async () => {
+    try {
+        await initSMSC()
+
+        const options = {
+            flat: true
+        }
+
+        const res = await SMSC.getGroups(options)
+
+        return res
+    } catch (e) {
+        console.log(e)
+    }
+}
+
 
 export const getUsersInClass = async (classCode) => {
     try {
@@ -64,6 +93,8 @@ export const getClassesWithUsers = async () => {
 
         const res = []
 
+        console.time('fetch_classes')
+        console.log(`${chalk.italic.gray('Fetching classes with users...')}`)
         const classes = await getClasses(true)
         for (const c of classes) {
             const users = await getUsersInClass(c.code)
@@ -77,8 +108,46 @@ export const getClassesWithUsers = async () => {
                     }
                 })
             })
-
+            
         }
+        console.log(`${chalk.italic.gray('Done!')}`)
+        console.timeEnd('fetch_classes')
+
+        return res
+
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+export const getGroupsWithUsers = async () => {
+    try {
+        await initSMSC()
+
+        const res = []
+
+        console.time('fetch_groups')
+        console.log(`${chalk.italic.gray('Fetching groups with users...')}`)
+        const groups = await getGroups()
+        for (const g of groups) {
+            const users = g.code ? await getUsersInClass(
+                g.code
+            ) : []
+            res.push({
+                groupName: g.name,
+                groupCode: g.code,
+                children: g.children,
+                users: users?.map(user => {
+                    return {
+                        username: user.gebruikersnaam,
+                        internalId: user.internnummer
+                    }
+                })
+            })            
+        }
+
+        console.log(`${chalk.italic.gray('Done!')}`)
+        console.timeEnd('fetch_groups')
 
         return res
 
@@ -95,6 +164,21 @@ export const getUserProfilePicture = async (userId) => {
 
         return profilePicture
 
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+export const sendEmail = async (title, body, to, from = 'Null') => {
+    try{
+        await initSMSC()
+
+        await SMSC.sendMessage({
+            userName: to,
+            title,
+            body,
+            fromUser: from
+        })
     } catch (e) {
         console.log(e)
     }

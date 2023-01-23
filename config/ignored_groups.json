@@ -1,0 +1,24 @@
+{
+    "groupCodes": [
+        "CLWTraject",
+        "DIR",
+        "VLBVOL",
+        "OKAN",
+        "meerberichtrechten",
+        "GWP Slowakije/Polen 2022",
+        "GWP Rome 2022",
+        "SYMbegeleiding",
+        "OKANbegeleiding",
+        "Beheerders-Oudercontact",
+        "BH-Noteble",
+        "AB",
+        "deliberatie gebruiken",
+        "deliberatiebeheer",
+        "beheer_inschrijvingen",
+        "LAZLO",
+        "VBBCLeden",
+        "VWG-LO",
+        "VWG-ECOR"
+    ],
+    "groupCodesIncludes": "LK"
+}

@@ -1,110 +1,51 @@
-import inquirer from "inquirer";
-import chalk from "chalk";
 import { admin_directory_v1, google } from "googleapis";
-import yargs from "yargs";
-import { hideBin } from "yargs/helpers";
-import { writeFileSync as fsWriteFileSync } from "fs";
+import { writeFileSync as fsWriteFileSync, readFileSync as fsReadFileSync } from "fs";
 import path from "path";
 import { cwd } from "process";
 import { OAuth2Client } from "google-auth-library";
-
-import { authorize } from "./functions/auth.js";
-import updateUsersPrimaryEmail from "./functions/updateUsersPrimaryEmail.js";
-import saveUsersToLocalFile from "./functions/saveUsersToLocalDB.js";
-import clearlocalFiles from "./functions/clearLocalFiles.js";
-import removeGroups from "./functions/removeGroups.js";
-import { getSMSCUsers } from "./functions/smartschoolHandler.js";
+import chalk from "chalk";
 
 import config from "./config/config.json" assert { type: "json" };
-import { domainChooser, orgChooser } from "./helpers/domain_org_chooser.js";
-import { groupProvisioning } from "./functions/groupProvisioning.js";
-import { photoProvisioning } from "./functions/photoProvisioning.js";
-import { saveAllUsers } from "./functions/userProvisoning.js";
+import { authorize } from "./functions/auth.js";
 
-const whatQuestion = [
-	{
-		type: "list",
-		message: "What do you want to do?",
-		choices: [
-			new inquirer.Separator("USERS"),
-			{
-				name: "Change users primary email",
-				value: "change_primary_email",
-			},
-			{
-				name: "Save users to local database",
-				value: "save_to_db",
-			},
-			new inquirer.Separator("Provisioning"),
-			{
-				name: "Save all users for provisioning",
-				value: "save_all_users",
-			},
-			{
-				name: "Manage organization groups",
-				value: "manage_groups",
-			},
-			{
-				name: "Provision user profile pictures",
-				value: "provision_profile_pictures",
-			},
-			{
-				name: "Remove all users from groups",
-				value: "empty_groups",
-			},
-			new inquirer.Separator("SMARTSCHOOL"),
-			{
-				name: "Availible soon",
-				disabled: true
-			},
-			new inquirer.Separator("CONFIG"),
-			{
-				name: "Clear all files in generated directory",
-				value: "clear_generated",
-			},
-		],
-		name: "what",
-	},
-];
-const queryTypeQuestion = [
-	{
-		type: "list",
-		message: "From with property do you want to fetch the users?",
-		choices: ["domain", "organization unit"],
-		name: "queryType",
-		filter(val) {
-			switch (val) {
-				case "domain":
-					return 1;
-				case "organization unit":
-					return 2;
-				default:
-					return 1;
-			}
-		},
-	},
-];
-
-const FLAGS = yargs(hideBin(process.argv))
-	.option("dev", {
-		description: "Skip the part of creating/updating things",
-		type: "boolean",
-	})
-	.option("signout", {
-		description: "Sign all updated users out after updating them",
-		type: "boolean",
-	})
-	.parse();
+import { createNewUser, findDeletedUsers, findNewUsers, findUpdatedUsers, saveAllUsers } from "./functions/userProvisoning.js";
+import { sendEmail } from "./functions/smartschoolHandler.js";
+import { createNewGroups } from "./functions/groupProvisioning.js";
+import { combineUserProvisioningFiles, getLatestProvisioningFile } from "./helpers/provisioningFiles.js";
+import { addStudentsToOU, createNewOrgUnits, deleteOldOrgUnits } from "./functions/orgUnitProvisioning.js";
 
 authorize().then(startProgram);
+
+const findParent = (id, currentNode) => {
+	let i, currentChild, result
+
+	if(id === currentNode.id) {
+		return currentNode
+	} else {
+		for(i = 0; i < currentNode.children.length; i++){
+			currentChild = currentNode.children[i]
+
+			result = findParent(id, currentChild)
+
+			if(result !== false){
+				return result
+			}
+		}
+
+		return false
+	}
+}
+
+const base64_encode = (file) => {
+	let bitmap = fsReadFileSync(path.join(cwd(), file), 'base64')
+	return bitmap
+}
 
 /**
  *
  * @param {OAuth2Client} auth
  */
 async function startProgram(auth) {
-	//Clear console
-	console.clear()
 
 	//Create Google Admin Service
 	const service = google.admin({
@@ -113,136 +54,194 @@ async function startProgram(auth) {
 		timeout: 1000,
 	});
 
-	if (config.is_first_time) {
-		console.log(`
-${chalk.bgGreenBright("=== Welcome to GWBulkEdit ===")}
-Before we start, some configuration has to be done.
-		`);
-		const config_options_answers = await inquirer.prompt({
-			type: "checkbox",
-			choices: [
-				{
-					name: "Enable SMSC integration",
-					value: "enable_smsc",
-				},
-				{
-					name: "Prefetch domains on launch",
-					value: "enable_domain_prefetch",
-				},
-			],
-			name: "configOptions",
-		});
-		for (const configOption of config_options_answers.configOptions) {
-			switch (configOption) {
-				case "enable_smsc":
-					config.smsc_enabled = true;
-
-					console.log(`
-${chalk.yellow("=== SMSC configuration ===")}
-For using Smartschool, some extra configuration is needed.
-1. Activate the Smartschool API under
-	${chalk.italic("Algemene instellingen > Webservices")}
-	Preferably create a custom profile there
-2. Edit ${chalk.italic(
-						"config/smartschool.json"
-					)} and fill in the required fields.
-			`);
-					const smsc_config_answers = await inquirer.prompt({
-						type: "confirm",
-						message: "Edited config/smartschool.json?",
-						name: "pass",
-					});
-					if (smsc_config_answers.pass !== true) {
-						console.log(`
-${chalk.redBright("Configuration failed")}
-Try again!
-				`);
-						return process.exit(1);
-					}
-					break;
-
-				case "enable_domain_prefetch":
-					config.domain_prefetch_enabled = true;
-					console.log(`
-${chalk.yellow("=== Prefetching domains ===")}
-					`);
-					const domains = (
-						await service.domains.list({
-							customer: "my_customer",
-						})
-					).data.domains;
-					config.owned_domains = domains.map((domain) => {
-						return domain.domainName;
-					});
-					console.log(`
-${chalk.greenBright("Done!")}
-					`);
-					break;
-			}
-		}
-		console.log(`
-${chalk.greenBright("Configuration succeeded!")}
-The application will stop now, please restart it.
-		`);
-
-		config.is_first_time = false;
-
-		//Rewrite config file
-		fsWriteFileSync(
-			path.join(cwd(), "config/config.json"),
-			JSON.stringify(config, null, 4)
-		);
-
-		return process.exit(0);
-	}
-
 	//Domain prefetching
-	if (config.domain_prefetch_enabled) {
-		const domains = (
-			await service.domains.list({
-				customer: "my_customer",
-			})
-		).data.domains;
-		config.owned_domains = domains.map((domain) => {
-			return domain.domainName;
-		});
-		fsWriteFileSync(
-			path.join(cwd(), "config/config.json"),
-			JSON.stringify(config, null, 4)
-		);
-	}
+	const domains = (
+		await service.domains.list({
+			customer: "my_customer",
+		})
+	).data.domains;
+	config.owned_domains = domains.map((domain) => {
+		return domain.domainName;
+	});
 
-	return aksQuestions(service);
+	//OrgUnit prefetching
+	const orgUnits = (
+		await service.orgunits.list({
+			customerId: 'my_customer',
+			orgUnitPath: '/',
+			type: 'all'
+		})
+	).data.organizationUnits
+
+	const orgUnitsFormatted = 
+		{
+			id: '0',
+			orgUnitPath: '/',
+			children: [],
+		}
+	
+	orgUnits
+		.sort((a, b) => a.parentOrgUnitPath.localeCompare(b.parentOrgUnitPath))
+		.forEach((unit) => {
+			if(unit.parentOrgUnitPath !== "/"){
+				const parent = findParent(unit.parentOrgUnitId, orgUnitsFormatted)
+				parent.children.push(
+					{
+						id: unit.orgUnitId,
+						name: unit.name,
+						orgUnitPath: unit.orgUnitPath,
+						parentOrgUnitPath: unit.parentOrgUnitPath,
+						parentOrgUnitId: unit.parentOrgUnitId,
+						children: []
+					}
+				)
+			}else{
+				orgUnitsFormatted.children.push(
+					{
+						id: unit.orgUnitId,
+						name: unit.name,
+						orgUnitPath: unit.orgUnitPath,
+						children: []
+					}
+				)
+			}
+		})
+
+	config.orgUnits = orgUnitsFormatted
+
+	fsWriteFileSync(
+		path.join(cwd(), "config/config.json"),
+		JSON.stringify(config, null, 4)
+	);
+
+	return startProvisioning(service);
 }
 
 /**
- * Start the inquirer process
- *
- * @param {admin_directory_v1.Admin} service An authorized OAuth2 client.
+ * 
+ * @param {admin_directory_v1.Admin} service
  */
-async function aksQuestions(service) {
-	const what_question_answers = await inquirer.prompt(whatQuestion);
-	if (what_question_answers.what === "change_primary_email") {
-		const query_type_answers = await inquirer.prompt(queryTypeQuestion);
-		if (query_type_answers.queryType == 1) {
-			const domain = await domainChooser();
-			updateUsersPrimaryEmail(domain, null, service, 1, FLAGS);
-		} else if (query_type_answers.queryType == 2) {
-			const domain = await domainChooser();
-			const orgPath = await orgChooser();
-			updateUsersPrimaryEmail(domain, orgPath, service, 2, FLAGS);
+async function startProvisioning(service) {
+	console.time('program_time')
+	
+	//For network timeout errors
+	service.context._options.timeout = 5000
+
+	// await createNewGroups(service)
+
+	// 1. Fetch all users from SMSC and Google
+	// await saveAllUsers(service)
+	
+	//2. Combine the user files to one
+	// await combineUserProvisioningFiles()
+
+	// //3. Check orgUnits based on official classes
+	// //   OU fetched wile starting program, stored in config 
+	// //   Only edit '/leerlingen/*'
+	// await createNewOrgUnits(service)
+
+	// //4. Add users to their respective (official) class ou's 	TODO: needed once?
+	// await addStudentsToOU(service)
+
+	// //5. Remove non-exsitent classes existing as ou
+	// await deleteOldOrgUnits(service)
+
+
+	//6. Check for new SMSC users and create google				TODO: verify method for finding new users
+	const newUsers = await findNewUsers()
+	if(newUsers.length > 0){
+		for (const user of newUsers) {
+			if(!config.is_test){
+				const google_cred = await createNewUser(service, user)
+	
+				//4.2 Send message with password and email to their SMSC
+				const title = `Google Workspace account`;
+				const body = `<div style="font-size: 14px; line-height: 115%">
+					<img src="data:image/png;base64,${base64_encode('images/google_workspace_account_ready.png')}" style="width: 100%; margin-bottom: 5px;">
+					</br>
+					<p>Beste ${user.smartschool.name.surname}</p>
+					<p>Uw Google Workspace account is klaar voor gebruik!</p>
+					<p>Aanmelden kan met onderstaande gegevens via <a target="_blank" href="https://workspace.google.com/dashboard">https://workspace.google.com/dashboard</a>.</p>
+					<div style="border-left: 1.5px solid #ccc; padding-left: 5px;">
+						<p><b>Email</b>: <i>${google_cred.email}</i></p>
+						<p><b>Wachtwoord</b>: <i>${google_cred.password}</i></p>
+					</div>
+					<p>U zal uw wachtwoord onmiddelijk moeten wijzigen nadat u voor de eerste keer hebt ingelogd.</p>
+					</br>
+					<p>Met vriendelijke groeten</p>
+					<p>ICT Dienst</p>
+					<p>GO! atheneum Oudenaarde</p>
+					<img src="data:image/png;base64,${base64_encode('images/go_ao.png')}" width="265" height="81">
+				</div>`;
+				await sendEmail(title, body, user.smartschool.internalId);
+				await sendEmail(title + ": KOPIE", body + `<p>Verzonden naar: ${user.smartschool.username}</p>`, '25045');
+				console.table(google_cred)
+			} else {
+				console.log(`Creating new users skipped.`)
+			}
 		}
-	} else if (what_question_answers.what === "manage_groups") {
-		groupProvisioning(service)
-	} else if (what_question_answers.what === "save_to_db") {
-		saveUsersToLocalFile(service, FLAGS);
-	} else if (what_question_answers.what === "clear_generated") {
-		clearlocalFiles();
-	} else if (what_question_answers.what === "empty_groups") {
-		removeGroups(service, FLAGS);
-	} else if (what_question_answers.what === "provision_profile_pictures") {
-		photoProvisioning(service)
-	} else if (what_question_answers.what === "save_all_users"){
-		await saveAllUsers(service)
+	} else {
+		console.log('no new users found')
 	}
+
+
+	// //7. Check for deleted users and delete their account
+	// const deletedUsers = await findDeletedUsers()
+	// if (deletedUsers && deletedUsers.length > 0){
+	// 	if(!config.is_test){
+	// 		for (const user of deletedUsers){
+	// 			await service.users.delete({
+	// 				userKey: user.google.id
+	// 			})
+	// 		}
+	// 	} else {
+	// 		console.log('Deleting user skipped.')
+	// 	}
+	// }else {
+	// 	console.log('no deleted users found')
+	// }
+
+	// //8. Check for updated users and provision the data to google
+	// const updatedUsers = await findUpdatedUsers()
+	// if(updatedUsers && updatedUsers.length > 0){
+	// 	if(!config.is_test){
+	// 		for (const user of updatedUsers){
+	// 			const newEmail = `${user.smartschool.name.surname}.${user.smartschool.name.lastname}@${user.google.email.split('@')[1]}`
+	// 			await service.users.update({
+	// 				userKey: user.google.id,
+	// 				requestBody: {
+	// 					name: {
+	// 						givenName: user.smartschool.name.surname,
+	// 						familyName: user.smartschool.name.lastname
+	// 					},
+	// 					primaryEmail: newEmail,
+	// 					orgUnitPath: `/leerlingen/${user.officialClass}`
+	// 				}
+	// 			})
+
+	// 			const title = `Google Workspace account: wijziging`;
+	// 			const body = `<div style="font-size: 14px; line-height: 115%">
+	// 				<img src="data:image/png;base64,${base64_encode('images/google_workspace_account_ready.png')}" style="width: 100%; margin-bottom: 5px;">
+	// 				</br>
+	// 				<p>Beste ${user.smartschool.name.surname}</p>
+	// 				<p>We laten u weten dat uw Google Workspace account is aangepast naar de laatste gegevens.</p>
+	// 				<p>Aanmelden kan met onderstaande gegevens via <a target="_blank" href="https://workspace.google.com/dashboard">https://workspace.google.com/dashboard</a>.</p>
+	// 				<div style="border-left: 1.5px solid #ccc; padding-left: 5px;">
+	// 					<p><b>Email</b>: <i>${newEmail}</i>
+	// 				</div>
+	// 				<p>Uw wachtwoord bleef ongewijzigd.</p>
+	// 				</br>
+	// 				<p>Met vriendelijke groeten</p>
+	// 				<p>ICT Dienst</p>
+	// 				<p>GO! atheneum Oudenaarde</p>
+	// 				<img src="data:image/png;base64,${base64_encode('images/go_ao.png')}" width="265" height="81">
+	// 			</div>`;
+	// 			await sendEmail(title, body, user.smartschool.internalId);
+	// 		}
+	// 	}
+	// } else {
+	// 	console.log('no updated users found')
+	// }
+
+	console.timeEnd('program_time')
 }

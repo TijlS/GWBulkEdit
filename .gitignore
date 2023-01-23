@@ -12,6 +12,8 @@ config/token.json
 config/database.db
 config/config.json
 config/smartschool.json
+config/ignored_users.json
+config/custom_mapping.json
 
 # test files
 test.js

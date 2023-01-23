@@ -79,7 +79,7 @@ const updateUsersPrimaryEmail = async (
 									"The default limit of 2400 request per minute is almost reached. To make sure that everything will be completed, the program will wait for 30 seconds."
 								)
 						);
-						sleep(30000);
+						await sleep(30000);
 						amountOfRequest = 0;
 					}
 
