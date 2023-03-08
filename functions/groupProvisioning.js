@@ -98,18 +98,22 @@ export const getGoogleGroupsWithUsers = async (service) => {
  *  @param {admin_directory_v1.Admin} service An authorized OAuth2 client.
  */
 export const deleteOldGroups = async (service) => {
+	console.time("groups_delete");
 	const groups_smsc = await getLatestProvisioningFile("smsc_groups");
-	const groups_google = await getLatestProvisioningFile("google_groups");
+	const groups_google = await getLatestProvisioningFile("google_groups_and_users");
 
-	const groupNames = groups_smsc.content.map((g) => g.groupName);
+	const groupNames = groups_smsc.content.map((g) => g.groupCode?.replace(/ /g, "").replace(/\)/g, "_").replace(/\./g, ""));
 
 	const old_groups = groups_google.content.filter(
 		(g) =>
-			g.groupEmail.includes("leerling.go-atheneumoudenaarde.be") &&
-			!groupNames.includes(g.groupName)
+			g.groupEmail.includes("leerling.go-ao.be") &&
+			!groupNames.includes(g.groupName) &&
+			g.groupName !== "Leerlingen" &&
+			g.groupName !== "LK-Fortstraat" &&
+			g.groupName !== "9TEST-Klas"
 	);
 
-	console.time("groups_delete");
+
 	for (const group of old_groups) {
 		const users = await service.members.list({
 			groupKey: group.groupEmail,
@@ -138,55 +142,118 @@ export const deleteOldGroups = async (service) => {
  *  @param {admin_directory_v1.Admin} service An authorized OAuth2 client.
  */
 export const createNewGroups = async (service) => {
-	const groups = await getLatestProvisioningFile("google_groups");
+	const groups = await getLatestProvisioningFile("google_groups_and_users");
 	const groups_smsc = await getLatestProvisioningFile("smsc_groups");
 
 	const googleNames = groups.content
 		.filter((g) =>
-			g.groupEmail.includes("leerling.go-atheneumoudenaarde.be")
+			g.groupEmail.includes("leerling.go-ao.be") ||
+			g.groupEmail.includes("vwg-")
 		)
-		.map((g) => g.groupName.toLowerCase());
+		.map((g) => g.groupName);
 
-	const new_groups = groups_smsc.content.filter(
-		(g) =>
-			!googleNames.includes(g.groupName.toLowerCase()) &&
-			g.users.length > 0 &&
-			!g.children &&
-			!ignored_groups.groupCodes.includes(g.groupCode) &&
-			!g.groupCode.includes(ignored_groups.groupCodesIncludes) &&
-			g.groupName == g.groupCode
-	);
+	const new_groups = groups_smsc.content
+		.filter(
+			(g) =>
+				g.users.length > 0 &&
+				!g.children &&
+				!ignored_groups.groupCodes.includes(g.groupCode) &&
+				!g.groupCode.includes(ignored_groups.groupCodesIncludes)
+		)
+		.map((g) => ({
+			...g,
+			groupCode: g.groupCode.replace(/ /g, "").replace(/\)/g, "_").replace(/\./g, "").replace(/\//g, "_"),
+		}))
+		.filter((g) => !googleNames.includes(g.groupCode));
 
-	for (const group of new_groups) {
-		const newGroup = await service.groups.insert({
-			requestBody: {
-				email: `${group.groupCode
-					.replace(/ /g, "")
-					.replace(/\)/g, "_")}@leerling.go-atheneumoudenaarde.be`,
-				description: `${group.groupName}`,
-			},
-		});
-		// await service.groups.aliases.insert({
-		//     groupKey: `${newGroup.data.id}`,
-		//     requestBody: {
-		//         alias: `${encodeURIComponent(group.groupName)}@leerling.go-atheneumoudenaarde.be`
-		//     }
-		// })
-		console.log(
-			`${chalk.bgGreenBright.white("CREATED")} ${
-				newGroup.data.email
-			}`
-		);
-	}
+
+	console.table(new_groups)
+	
+
+	// for (const group of new_groups) {
+	// 	const email = `${group.groupCode}@${group.groupName.includes('VWG') ? '' : 'leerling.'}go-ao.be`
+
+	// 	const newGroup = await service.groups.insert({
+	// 		requestBody: {
+	// 			email: email,
+	// 			description: `${group.groupName}`,
+	// 		},
+	// 	});
+	// 	console.log(
+	// 		`${chalk.bgGreenBright.white("CREATED")} ${newGroup.data.email}`
+	// 	);
+	// }
 };
 
 /**
  *
  *  @param {admin_directory_v1.Admin} service An authorized OAuth2 client.
  */
-export const studentGroupProvisioning = async (service) => {
-	const groupsWithUsers = await getGroupsWithUsers(service);
+export const addUserToGroups = async (service) => {
+	const users = (await getLatestProvisioningFile("combined_users")).content;
+	const groups_google = (await getLatestProvisioningFile("google_groups_and_users"))
+		.content;
 
-	console.log(chalk.bgGreenBright("Finished!"));
-	process.exit(0);
+	for (const user of users) {
+		//Filter non-existing google groups out of SMSC groups
+		const smsc_groups = user.groups
+			.filter((g) => groups_google.some((gg) => gg.groupName == g.replace(/ /g, "").replace(/\)/g, "_").replace(/\./g, "").replace(/\//g, "_")))
+			.map((g) => ({
+				name: g,
+				groupEmail: groups_google.find((gg) => gg.groupName == g.replace(/ /g, "").replace(/\)/g, "_").replace(/\./g, "").replace(/\//g, "_"))
+					.groupEmail,
+			}));
+		
+		//Get google groups where user is no longer part of
+		const old_google_groups = user.google_groups.filter(
+			(g) =>
+				!user.groups.some((gg) => gg.replace(/ /g, "").replace(/\)/g, "_").replace(/\./g, "").replace(/\//g, "_") == g.groupName) &&
+				g.groupName !== "personeel" &&
+				g.groupName !== "administratie" &&
+				g.groupName !== "bewaking" &&
+				g.groupName !== "Directie" &&
+				g.groupName !== "Noteble" &&
+				g.groupName !== "Leerlingbegeleding" &&
+				g.groupName !== "Opvoeders Fortstraat" &&
+				g.groupName !== "CLW-Leerkrachten" &&
+				g.groupName !== "Classroom-docenten" &&
+				g.groupName !== "LK-1graad" &&
+				g.groupName !== "Opvoeders-Bergstraat" &&
+				g.groupName !== "testgroep" &&
+				g.groupName !== "CLW-Trajectbegeleiding" &&
+				g.groupName !== "Financiële administratie" &&
+				g.groupName !== "ICT" &&
+				g.groupName !== "team eetfestijn" &&
+				!g.groupName.includes("VWG-") &&
+				!g.groupName.includes("Media")
+		);
+
+		for (const group of old_google_groups) {
+			await service.members.delete({
+				groupKey: group.groupEmail,
+				memberKey: user.google[0].id
+			})
+			console.log(`deleted ${user.name} from ${group.groupEmail}`)
+		}
+
+
+		for (const group of smsc_groups) {
+			if (
+				!user.google_groups?.find(g => g.groupName == group.name.replace(/ /g, "").replace(/\)/g, "_").replace(/\./g, "").replace(/\//g, "_"))
+			) {
+				try {
+					await service.members.insert({
+						groupKey: group.groupEmail,
+						requestBody: {
+							id: user.google[0]?.id,
+						},
+					});
+					console.log(`added ${user.name} to ${group.groupEmail}`);
+				} catch (error) {
+					console.log(`${chalk.bgRedBright.white('ERROR:')} no google for ${user.name}`)
+				}
+			}
+
+		}
+	}
 };

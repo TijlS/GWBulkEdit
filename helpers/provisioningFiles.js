@@ -21,6 +21,7 @@ const FILE_NAME_GROUPS = {
 	smsc_groups: ["groups_SMSC"],
 	google_users: ["users_GOOGLE"],
 	google_groups: ["groups_GOOGLE"],
+	google_groups_and_users: ['groups_GOOGLE_with_users'],
 	combined_users: ["combined_users"],
 	test: ["test_users"],
 };
@@ -45,6 +46,19 @@ export const getProvisioningFiles = async (filter) => {
 
 	return files.sort((a, b) => a.createdAt - b.createdAt);
 };
+
+export const cleanUpProvisioningFiles = async () => {
+	for (const filter in FILE_NAME_GROUPS) {
+		const files = await getProvisioningFiles(filter)
+
+		for (const file of files.slice(0, -3)){
+			await fs.rmSync(path.join(cwd(), `provisioning/${file.originalFileName}`), {
+				force: true,
+			})
+			console.log(`removed ${file.originalFileName}`)
+		}
+	}
+} 
 
 /**
  * 
@@ -110,27 +124,30 @@ export const combineUserProvisioningFiles = async () => {
 	const smsc_users = (
 		await getLatestProvisioningFile("smsc_users")
 	).content;
-	const smsc_classes_with_users = (
-		await getLatestProvisioningFile("smsc_classes")
-	).content;
 	const smsc_groups_with_users = (
 		await getLatestProvisioningFile("smsc_groups")
+	).content
+	const google_groups_with_users = (
+		await getLatestProvisioningFile("google_groups_and_users")
 	).content
 
 	for (const user of smsc_users) {
 		const queryFieldFormatted = `${user.queryField
 			.split("-")
 			.reverse()
-			.join(".")}}`;
+			.join(".")
+			.toLowerCase()}}`;
 		const generatedUsername = `${user.name.surname
 			.split(" ")
 			.join(".")
 			.toLowerCase()
-			.replace(/-/g, "")}.${user.name.lastname
+			.replace(/-/g, "")
+			.toLowerCase()}.${user.name.lastname
 			.split(" ")
 			.join(".")
 			.toLowerCase()
-			.replace(/-/g, "")}`;
+			.replace(/-/g, "")
+			.toLowerCase()}`;
 		const customFormat = custom_mappings.find(
 			(m) => m.smsc == user.username && !m.ignore
 		);
@@ -145,21 +162,34 @@ export const combineUserProvisioningFiles = async () => {
 				u.email.split("@")[0].toLowerCase() == generatedUsername ||
 				u.email.split("@")[0].toLowerCase() == customFormat?.google) &&
 				(
-					user.gorollen.length > 0 ? u.orgUnit == "/personeel" : u.orgUnit.includes("/leerlingen")
+					user.gorollen.length > 0 && user.username !== "llnraad.fortstraat"
+						? !u.orgUnit.includes("/leerlingen") 
+						: u.orgUnit.includes("/leerlingen")
 				)
 		);
-		const officialClass = smsc_classes_with_users.find((c) =>
-			c.users.some((u) => u.internalId === user.internalId && user.internalId !== null)
+		const officialClass = smsc_groups_with_users.filter(g => g.official === true).find((c) =>
+			c.users.some((u) => 
+				( u.internalId === user.internalId && user.internalId !== null ) ||
+				u.username === user.username
+			)
 		);
 		const groups = smsc_groups_with_users.filter(g => 
 			g.users.some(u => u.internalId === user.internalId && user.internalId !== null)	
 		)
+		const google_groups = google_groups_with_users.filter(g => 
+			g.users.some(u => u.id === google_user[0]?.id)
+		).map(g => ({
+			groupName: g.groupName,
+			groupEmail: g.groupEmail
+		}))
+
 		output.push({
 			name: user.username,
-			officialClass: officialClass?.classCode,
+			officialClass: officialClass?.groupCode,
 			smartschool: user,
 			google: google_user,
 			groups: groups.map(g => g.groupCode),
+			google_groups: google_groups,
 			custom: {
 				photo_updated: false,
 				class_updated: false,

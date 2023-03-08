@@ -7,6 +7,7 @@ node_modules/
 
 generated/*.*
 provisioning/*.*
+mail_queue/*.*
 config/credentials.json
 config/token.json
 config/database.db

@@ -15,12 +15,12 @@ export const deleteOldOrgUnits = async (service) => {
 	const studentOUs = config.orgUnits.children.find(
 		(ou) => ou.orgUnitPath == "/leerlingen"
 	);
-	const smscClasses = await getLatestProvisioningFile("smsc_classes");
+	const smscClasses = (await getLatestProvisioningFile("smsc_groups")).content.filter(g => g.official == true)
 
 	//Search for old ou in google => remove
 	for (const ou of studentOUs.children) {
-		const smsc_class = smscClasses.content.find(
-			(c) => c.classCode == ou.name
+		const smsc_class = smscClasses.find(
+			(c) => c.groupCode == ou.name
 		);
 		if (!smsc_class && !config.is_test) {
 			await service.orgunits.delete({
@@ -53,15 +53,15 @@ export const createNewOrgUnits = async (service) => {
 	const studentOUs = config.orgUnits.children.find(
 		(ou) => ou.orgUnitPath == "/leerlingen"
 	);
-	const smscClasses = await getLatestProvisioningFile("smsc_classes");
+	const smscClasses = await getLatestProvisioningFile("smsc_groups");
 
 	//Search for non-existing class in google => add ou
-	for (const smsc_class of smscClasses.content) {
+	for (const smsc_class of smscClasses.content.filter(g => g.official === true)) {
 		const ou = studentOUs.children.find(
-			(ou) => ou.name == smsc_class.classCode
+			(ou) => ou.name == smsc_class.groupCode
 		);
 		if (!ou) {
-			const formattedName = smsc_class.classCode;
+			const formattedName = smsc_class.groupCode;
 			await createOU(service, {
 				name: formattedName,
 				description: formattedName,
@@ -90,6 +90,7 @@ export const addStudentsToOU = async (service) => {
 
 	for (const user of usersWithClass) {
 		for (const google of user.google) {
+			if(google.orgUnit?.includes(user.officialClass)) continue
 			await service.users.update({
 				userKey: google.id,
 				requestBody: {

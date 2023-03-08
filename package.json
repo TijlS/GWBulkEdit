@@ -9,5 +9,8 @@
   "type": "module",
   "scripts": {
     "start": "node ."
+  },
+  "devDependencies": {
+    "prisma": "^4.10.1"
   }
 }

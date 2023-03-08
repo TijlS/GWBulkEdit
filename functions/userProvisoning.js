@@ -7,10 +7,11 @@ import crypto from "crypto";
 
 import { admin_directory_v1 } from "googleapis";
 import { getUsers } from "./getUsers.js";
-import { getClassesWithUsers, getGroupsWithUsers, getSMSCUsers } from "./smartschoolHandler.js";
+import { getClassesWithUsers, getGroupsWithUsers, getSMSCUsers, getUserProfilePicture } from "./smartschoolHandler.js";
 import {
 	getLatestProvisioningFile,
 	getSecondLatetsProvisioningFile,
+	updateProvisioningFile,
 } from "../helpers/provisioningFiles.js";
 
 import ignoredUsers from "../config/ignored_users.json" assert { type: "json" };
@@ -49,9 +50,8 @@ const saveFile = async (data, name) => {
 export const saveAllUsers = async (service) => {
 	const smsc_users = await getSMSCUsers();
 	const google_users = await getUsers({ customer: "my_customer" }, service);
-	const classesWithUsers = await getClassesWithUsers();
 	const groupsWithUsers = await getGroupsWithUsers()
-	const googleGroups = await getGoogleGroups(service)
+	const googleGroupsWithUsers = await getGoogleGroupsWithUsers(service)
 
 	await saveFile(
 		smsc_users.map((user) => {
@@ -81,19 +81,14 @@ export const saveAllUsers = async (service) => {
 					fullname: user.name.fullName,
 				},
 				orgUnit: user.orgUnitPath,
+				suspended: user.suspended
 			};
 		}),
 		"users_GOOGLE"
 	);
 
-	await saveFile(classesWithUsers, "classes_SMSC");
 	await saveFile(groupsWithUsers, "groups_SMSC");
-	await saveFile(googleGroups.map(g => {
-		return {
-			groupName: g.name,
-            groupEmail: g.email,
-		}
-	}), "groups_GOOGLE")
+	await saveFile(googleGroupsWithUsers, "groups_GOOGLE_with_users")
 };
 
 /**
@@ -160,34 +155,34 @@ export const findUpdatedUsers = async () => {
 	if (lastUsers) {
 		const lastUsersIds = lastUsers.content.map(
 			(u) => u.smartschool.internalId
-		);
+		).filter(u => u !== null);
 		//Search in last provisioning file
 		return users.content.filter((user) => {
+			if(user.smartschool.internalId == null){
+				return false
+			}
 			const lastUserProfile = lastUsers.content.find(
 				(u) => u.smartschool.internalId == user.smartschool.internalId
 			);
 			if(!lastUserProfile){
-				//Prevent finding new users
+				//Prevent finding updated users
 				return false
 			}
 			const canBeChecked =
 				lastUsersIds.includes(user.smartschool.internalId) &&
 				user.smartschool.status === "actief" &&
-				user.google.length !== 0 &&
+				user.google.length > 0 &&
 				user.smartschool.internalId !== null &&
 				!ignoredUsers.username.includes(user.smartschool.username);
-			const isNew =
+			const isUpdated =
 				user.smartschool.username !==
 					lastUserProfile.smartschool.username ||
 				user.smartschool.name.surname !==
 					lastUserProfile.smartschool.name.surname ||
 				user.smartschool.name.lastname !==
-					lastUserProfile.smartschool.name.lastname ||
-				(user.officialClass !== undefined
-					? user.officialClass !== lastUserProfile.officialClass
-					: false);
+					lastUserProfile.smartschool.name.lastname;
 
-			return canBeChecked && isNew;
+			return canBeChecked && isUpdated;
 		});
 	} else {
 		return false;
@@ -206,7 +201,7 @@ export const createNewUser = async (service, user) => {
 		isStudent ? "leerling." : ""
 	}go-ao.be`;
 
-	await service.users.insert({
+	const newUser = await service.users.insert({
 		requestBody: {
 			primaryEmail: email,
 			name: {
@@ -231,7 +226,67 @@ export const createNewUser = async (service, user) => {
 	})
 
 	return {
-		password,
-		email,
+		google_cred: {
+			password,
+			email
+		},
+		newUser
 	};
 };
+
+/**
+ * 
+ * @param {admin_directory_v1.Admin} service
+ */
+export const disableGoogleUsers = async (service) => {
+	const users = await getLatestProvisioningFile('combined_users')
+
+	const disabled_users = users.content.filter(u => (
+		u.smartschool.status !== "actief" &&
+		u.google.length > 0 && 
+		u.google[0].suspended !== true
+	))
+
+	for (const user of disabled_users) {
+		await service.users.update({
+			userKey: user.google[0].id,
+			requestBody: {
+				suspended: true,
+			}
+		})
+		console.log(`Suspended ${user.google[0].email}`)
+	}
+}
+
+/**
+ *
+ *  @param {admin_directory_v1.Admin} service An authorized OAuth2 client.
+ */
+export const photoProvisioning = async (service) => {
+    const users_file = await getLatestProvisioningFile('combined_users')
+
+    for (const user of users_file.content) {
+        if(!user.custom.photo_updated && user.google.length > 0 && user.smartschool.internalId){
+            user.custom.photo_updated = true
+            const photo = await getUserProfilePicture(user.smartschool.internalId)
+    
+            try {
+                await service.users.photos.update({
+                    userKey: user.google[0].id,
+                    requestBody: {
+                        photoData: photo,
+                        width: 256,
+                        height: 256
+                    }
+                })
+				console.log(`added photo to ${user.name}`)
+            } catch (e) {
+                console.error(`${chalk.bgRedBright.white('FAILED')} for ${user.name}`)
+            }
+        }else {
+			console.log(`skipped ${user.name}`)
+		}
+    }
+
+    await updateProvisioningFile(users_file.file, users_file.content)
+}

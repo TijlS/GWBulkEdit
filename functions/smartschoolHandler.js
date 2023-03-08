@@ -133,9 +133,11 @@ export const getGroupsWithUsers = async () => {
             const users = g.code ? await getUsersInClass(
                 g.code
             ) : []
+            
             res.push({
                 groupName: g.name,
                 groupCode: g.code,
+                official: g.isOfficial,
                 children: g.children,
                 users: users?.map(user => {
                     return {
