@@ -46,6 +46,18 @@ export const getProvisioningFiles = async (filter) => {
 
 	return files.sort((a, b) => a.createdAt - b.createdAt);
 };
+export const getLogFiles = async () => {
+	let files = await fs.readdirSync(path.join(cwd(), "logs/"));
+	files = files.map((file) => {
+		const timeCreated = dayjs(file[1], "DD-MM-YYYY_HH-mm");
+		return {
+			createdAt: timeCreated.unix(),
+			originalFileName: file,
+		};
+	});
+
+	return files.sort((a, b) => b.createdAt - a.createdAt);
+};
 
 export const cleanUpProvisioningFiles = async () => {
 	for (const filter in FILE_NAME_GROUPS) {
@@ -55,10 +67,18 @@ export const cleanUpProvisioningFiles = async () => {
 			await fs.rmSync(path.join(cwd(), `provisioning/${file.originalFileName}`), {
 				force: true,
 			})
-			console.log(`removed ${file.originalFileName}`)
 		}
 	}
-} 
+
+	//logs
+	const logFiles = await getLogFiles()
+
+	for (const file of logFiles.slice(0, -3)){
+		await fs.rmSync(path.join(cwd(), `logs/${file.originalFileName}`), {
+			force: true,
+		})
+	}
+}
 
 /**
  * 
@@ -105,7 +125,7 @@ export const getSecondLatetsProvisioningFile = async (dataType) => {
 };
 
 export const updateProvisioningFile = async (fileName, content) => {
-	fs.writeFileSync(
+	await fs.writeFileSync(
 		path.join(cwd(), `provisioning/${fileName}`),
 		JSON.stringify(content, null, 4)
 	);
@@ -153,14 +173,14 @@ export const combineUserProvisioningFiles = async () => {
 		);
 		const google_user = google_users.filter(
 			(u) =>
-				(u.email.split("@")[0].toLowerCase() ==
+				(u.email.split("@")[0].toLowerCase() ===
 					user.username
 						.toLowerCase()
 						.normalize("NFD")
 						.replace(/\p{Diacritic}/gu, "") ||
-				u.email.split("@")[0].toLowerCase() == queryFieldFormatted ||
-				u.email.split("@")[0].toLowerCase() == generatedUsername ||
-				u.email.split("@")[0].toLowerCase() == customFormat?.google) &&
+				u.email.split("@")[0].toLowerCase() === queryFieldFormatted ||
+				u.email.split("@")[0].toLowerCase() === generatedUsername ||
+				u.email.split("@")[0].toLowerCase() === customFormat?.google) &&
 				(
 					user.gorollen.length > 0 && user.username !== "llnraad.fortstraat"
 						? !u.orgUnit.includes("/leerlingen") 
@@ -182,10 +202,12 @@ export const combineUserProvisioningFiles = async () => {
 			groupName: g.groupName,
 			groupEmail: g.groupEmail
 		}))
+		const isStudent = user.gorollen.length <= 0
 
 		output.push({
 			name: user.username,
 			officialClass: officialClass?.groupCode,
+			isStudent,
 			smartschool: user,
 			google: google_user,
 			groups: groups.map(g => g.groupCode),

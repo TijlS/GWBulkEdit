@@ -185,3 +185,19 @@ export const sendEmail = async (title, body, to, from = 'Null') => {
         console.log(e)
     }
 }
+
+export const sendEmailWithAttachments = async (title, body, to, from = 'Null', att = []) => {
+    try{
+        await initSMSC()
+
+        await SMSC.sendMessage({
+            userName: to,
+            title,
+            body,
+            fromUser: from,
+            attachments: att
+        })
+    } catch (e) {
+        console.log(e)
+    }
+}

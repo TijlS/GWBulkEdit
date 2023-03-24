@@ -4,6 +4,12 @@ import { cwd } from "process"
 import crypto from "crypto"
 import { getLatestProvisioningFile } from "../helpers/provisioningFiles.js"
 import { sendEmail } from "./smartschoolHandler.js"
+import { configureLogger } from "../helpers/configureLogger.js";
+import winston from "winston";
+
+//Start the logger
+configureLogger()
+const logger = winston.loggers.get('logger')
 
 export const addMailToQueue = async (title, body, receiver) => {
     const uuid = crypto.randomUUID()
@@ -57,6 +63,7 @@ export const readMailFromQueue = async () => {
         if(user){
             if(user.smartschool.internalId !== null){
                 await sendEmail(content.data.subject, content.content, user.smartschool.internalId)
+                logger.info(`Send queued mail to ${user.username} with subject ${content.data.subject}`)
                 await removeMailFromQueue(file)
             }
         }

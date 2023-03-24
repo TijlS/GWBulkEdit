@@ -195,6 +195,10 @@ export const addUserToGroups = async (service) => {
 		.content;
 
 	for (const user of users) {
+		if(user.smartschool.actief !== "actief") {
+			return;
+		}
+
 		//Filter non-existing google groups out of SMSC groups
 		const smsc_groups = user.groups
 			.filter((g) => groups_google.some((gg) => gg.groupName == g.replace(/ /g, "").replace(/\)/g, "_").replace(/\./g, "").replace(/\//g, "_")))
@@ -203,6 +207,14 @@ export const addUserToGroups = async (service) => {
 				groupEmail: groups_google.find((gg) => gg.groupName == g.replace(/ /g, "").replace(/\)/g, "_").replace(/\./g, "").replace(/\//g, "_"))
 					.groupEmail,
 			}));
+		
+		if(user.isStudent){
+			//Fake student-group
+			smsc_groups.push({
+				name: 'Leerlingen',
+				groupEmail: 'leerlingen@leerling.go-ao.be'
+			})
+		}
 		
 		//Get google groups where user is no longer part of
 		const old_google_groups = user.google_groups.filter(

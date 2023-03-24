@@ -4,7 +4,8 @@
     "chalk": "^5.0.1",
     "dayjs": "^1.11.1",
     "googleapis": "^105.0.0",
-    "smartschool-client": "github:johancoppens/smartschool-client"
+    "smartschool-client": "github:johancoppens/smartschool-client",
+    "winston": "^3.8.2"
   },
   "type": "module",
   "scripts": {

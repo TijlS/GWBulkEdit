@@ -2,12 +2,12 @@ import path from "path";
 import dayjs from "dayjs";
 import fs from "fs/promises";
 import chalk from "chalk";
-import { cwd } from "process";
+import { cwd, exit } from "process";
 import crypto from "crypto";
 
 import { admin_directory_v1 } from "googleapis";
 import { getUsers } from "./getUsers.js";
-import { getClassesWithUsers, getGroupsWithUsers, getSMSCUsers, getUserProfilePicture } from "./smartschoolHandler.js";
+import { getGroupsWithUsers, getSMSCUsers, getUserProfilePicture } from "./smartschoolHandler.js";
 import {
 	getLatestProvisioningFile,
 	getSecondLatetsProvisioningFile,
@@ -15,7 +15,13 @@ import {
 } from "../helpers/provisioningFiles.js";
 
 import ignoredUsers from "../config/ignored_users.json" assert { type: "json" };
-import { getGoogleGroups, getGoogleGroupsWithUsers } from "./groupProvisioning.js";
+import { getGoogleGroupsWithUsers } from "./groupProvisioning.js";
+import { configureLogger } from "../helpers/configureLogger.js";
+import winston from "winston";
+
+//Start the logger
+configureLogger()
+const logger = winston.loggers.get('logger')
 
 /**
  *
@@ -48,47 +54,54 @@ const saveFile = async (data, name) => {
  * @param {admin_directory_v1.Admin} service
  */
 export const saveAllUsers = async (service) => {
-	const smsc_users = await getSMSCUsers();
-	const google_users = await getUsers({ customer: "my_customer" }, service);
-	const groupsWithUsers = await getGroupsWithUsers()
-	const googleGroupsWithUsers = await getGoogleGroupsWithUsers(service)
-
-	await saveFile(
-		smsc_users.map((user) => {
-			return {
-				username: user.gebruikersnaam,
-				internalId: user.internnummer,
-				name: {
-					surname: user.voornaam,
-					lastname: user.naam,
-				},
-				queryField: user.sorteerveld,
-				status: user.status,
-				leaver: user.schoolverlater,
-				gorollen: user.gorollen,
-			};
-		}),
-		"users_SMSC"
-	);
-	await saveFile(
-		google_users.map((user) => {
-			return {
-				id: user.id,
-				email: user.primaryEmail,
-				name: {
-					surname: user.name.givenName,
-					lastname: user.name.familyName,
-					fullname: user.name.fullName,
-				},
-				orgUnit: user.orgUnitPath,
-				suspended: user.suspended
-			};
-		}),
-		"users_GOOGLE"
-	);
-
-	await saveFile(groupsWithUsers, "groups_SMSC");
-	await saveFile(googleGroupsWithUsers, "groups_GOOGLE_with_users")
+	try {
+		const profiler = logger.startTimer()
+		const smsc_users = await getSMSCUsers();
+		const google_users = await getUsers({ customer: "my_customer" }, service);
+		const groupsWithUsers = await getGroupsWithUsers()
+		const googleGroupsWithUsers = await getGoogleGroupsWithUsers(service)
+	
+		await saveFile(
+			smsc_users.map((user) => {
+				return {
+					username: user.gebruikersnaam,
+					internalId: user.internnummer,
+					name: {
+						surname: user.voornaam,
+						lastname: user.naam,
+					},
+					queryField: user.sorteerveld,
+					status: user.status,
+					leaver: user.schoolverlater,
+					gorollen: user.gorollen,
+				};
+			}),
+			"users_SMSC"
+		);
+		await saveFile(
+			google_users.map((user) => {
+				return {
+					id: user.id,
+					email: user.primaryEmail,
+					name: {
+						surname: user.name.givenName,
+						lastname: user.name.familyName,
+						fullname: user.name.fullName,
+					},
+					orgUnit: user.orgUnitPath,
+					suspended: user.suspended
+				};
+			}),
+			"users_GOOGLE"
+		);
+	
+		await saveFile(groupsWithUsers, "groups_SMSC");
+		await saveFile(googleGroupsWithUsers, "groups_GOOGLE_with_users")
+		profiler.done({ message: 'Succefully fetched users' })
+	} catch (error) {
+		logger.error('Failed to fetch all users. Aborting...')
+		exit()
+	}
 };
 
 /**

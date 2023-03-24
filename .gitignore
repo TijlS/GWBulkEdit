@@ -5,9 +5,13 @@ node_modules/
 .env
 .env.*
 
+# generated files
 generated/*.*
 provisioning/*.*
 mail_queue/*.*
+logs/*
+
+# config
 config/credentials.json
 config/token.json
 config/database.db

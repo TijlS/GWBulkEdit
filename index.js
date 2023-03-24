@@ -4,7 +4,7 @@ import {
 	readFileSync as fsReadFileSync,
 } from "fs";
 import path from "path";
-import { cwd } from "process";
+import { cwd, exit } from "process";
 import { OAuth2Client } from "google-auth-library";
 
 import config from "./config/config.json" assert { type: "json" };
@@ -19,7 +19,7 @@ import {
 	photoProvisioning,
 	saveAllUsers,
 } from "./functions/userProvisoning.js";
-import { sendEmail } from "./functions/smartschoolHandler.js";
+import { sendEmail, sendEmailWithAttachments } from "./functions/smartschoolHandler.js";
 import {
 	addUserToGroups,
 	createNewGroups,
@@ -37,6 +37,16 @@ import {
 	deleteOldOrgUnits,
 } from "./functions/orgUnitProvisioning.js";
 import { addMailToQueue, readMailFromQueue } from "./functions/mailQueue.js";
+import { configureLogger, latestLogFile } from "./helpers/configureLogger.js";
+import winston from "winston";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat.js"
+
+dayjs.extend(customParseFormat)
+
+//Start the logger
+configureLogger()
+const logger = winston.loggers.get('logger')
 
 authorize().then(startProgram);
 
@@ -77,58 +87,70 @@ async function startProgram(auth) {
 		timeout: 5000,
 	});
 
-	//Domain prefetching
-	const domains = (
-		await service.domains.list({
-			customer: "my_customer",
-		})
-	).data.domains;
-	config.owned_domains = domains.map((domain) => {
-		return domain.domainName;
-	});
-
-	//OrgUnit prefetching
-	const orgUnits = (
-		await service.orgunits.list({
-			customerId: "my_customer",
-			orgUnitPath: "/",
-			type: "all",
-		})
-	).data.organizationUnits;
-
-	const orgUnitsFormatted = {
-		id: "0",
-		orgUnitPath: "/",
-		children: [],
-	};
-
-	orgUnits
-		.sort((a, b) => a.parentOrgUnitPath.localeCompare(b.parentOrgUnitPath))
-		.forEach((unit) => {
-			if (unit.parentOrgUnitPath !== "/") {
-				const parent = findParent(
-					unit.parentOrgUnitId,
-					orgUnitsFormatted
-				);
-				parent.children.push({
-					id: unit.orgUnitId,
-					name: unit.name,
-					orgUnitPath: unit.orgUnitPath,
-					parentOrgUnitPath: unit.parentOrgUnitPath,
-					parentOrgUnitId: unit.parentOrgUnitId,
-					children: [],
-				});
-			} else {
-				orgUnitsFormatted.children.push({
-					id: unit.orgUnitId,
-					name: unit.name,
-					orgUnitPath: unit.orgUnitPath,
-					children: [],
-				});
-			}
+	try {
+		//Domain prefetching
+		const domains = (
+			await service.domains.list({
+				customer: "my_customer",
+			})
+		).data.domains;
+		config.owned_domains = domains.map((domain) => {
+			return domain.domainName;
 		});
+		logger.info('Succefully fetched domains')
+	} catch (error) {
+		logger.error('Failed to fetch domains, aborting...')
+		exit()
+	}
 
-	config.orgUnits = orgUnitsFormatted;
+	try {
+		//OrgUnit prefetching
+		const orgUnits = (
+			await service.orgunits.list({
+				customerId: "my_customer",
+				orgUnitPath: "/",
+				type: "all",
+			})
+		).data.organizationUnits;
+		const orgUnitsFormatted = {
+			id: "0",
+			orgUnitPath: "/",
+			children: [],
+		};
+	
+		orgUnits
+			.sort((a, b) => a.parentOrgUnitPath.localeCompare(b.parentOrgUnitPath))
+			.forEach((unit) => {
+				if (unit.parentOrgUnitPath !== "/") {
+					const parent = findParent(
+						unit.parentOrgUnitId,
+						orgUnitsFormatted
+					);
+					parent.children.push({
+						id: unit.orgUnitId,
+						name: unit.name,
+						orgUnitPath: unit.orgUnitPath,
+						parentOrgUnitPath: unit.parentOrgUnitPath,
+						parentOrgUnitId: unit.parentOrgUnitId,
+						children: [],
+					});
+				} else {
+					orgUnitsFormatted.children.push({
+						id: unit.orgUnitId,
+						name: unit.name,
+						orgUnitPath: unit.orgUnitPath,
+						children: [],
+					});
+				}
+			});
+	
+		config.orgUnits = orgUnitsFormatted;
+
+		logger.info('Succefully fetched orgUnits')
+	} catch (error) {
+		logger.error('Failed to fetch orgUnits, aborting...')
+		exit()
+	}
 
 	fsWriteFileSync(
 		path.join(cwd(), "config/config.json"),
@@ -148,7 +170,7 @@ async function startProvisioning(service) {
 	/*****************************************************************************************
 	 * DEV:									TEMPORARY									DEV: *
 	 *****************************************************************************************
-	*/
+	 */
 	// const groups = (await getLatestProvisioningFile('google_groups_and_users')).content
 	// for (const group of groups) {
 	// 	if(group.groupEmail.includes('@leerling'))
@@ -161,46 +183,61 @@ async function startProvisioning(service) {
 	// 	}
 	// })
 	// await createNewGroups(service);
-	// return 
+	// return
 	/*****************************************************************************************
 	 * DEV:								END_TEMPORARY_END								DEV: *
 	 *****************************************************************************************
-	*/
+	 */
 
-	await cleanUpProvisioningFiles()
+	await cleanUpProvisioningFiles();
+	logger.info('Removed old provisioning files.')
 
 	// 1. Fetch all users from SMSC and Google
+	logger.info('Fetching all users')
 	await saveAllUsers(service);
-	
+
 	//2. Combine the user files to one
+	logger.info('Combing user files')
 	await combineUserProvisioningFiles();
 
+	logger.info('Reading mailqueue')
 	//Send queued mails
-	await readMailFromQueue()
-	
+	await readMailFromQueue();
+
+	logger.info('Disabling non-active SMSC users')
 	await disableGoogleUsers(service);
 
 	//3. Check orgUnits based on official classes
 	//   OU fetched wile starting program, stored in config
 	//   Only edit '/leerlingen/*'
+	logger.info('Creating new OU\'s in Google')
 	await createNewOrgUnits(service);
 
 	//4. Add users to their respective (official) class ou's
+	logger.info('Adding users to OU\'s')
 	await addStudentsToOU(service);
 
 	//5. Remove non-exsitent classes existing as ou
+	logger.info('Deleting old OU\'s')
 	await deleteOldOrgUnits(service);
 
-	//6. Check for new SMSC users and create google n
+	//6. Check for new SMSC users and create google
+	logger.info('Searching for new users')
 	const newUsers = await findNewUsers();
+	logger.info(`Creating ${newUsers.length} new users`)
 	if (newUsers.length > 0) {
 		const users_file = await getLatestProvisioningFile("combined_users");
 		for (const user of newUsers) {
 			if (!config.is_test) {
+				//TODO: Fix needded (?)
 				const userObj = users_file.content.find(
 					(u) =>
-						(u.smartschool.internalId == user.smartschool.internalId && u.smartschool.internalId !== null) ||
-						u.username == user.username
+						((
+							u.smartschool.internalId ==
+							user.smartschool.internalId &&
+							u.smartschool.internalId !== null) ||
+						u.username == user.username) &&
+						u.smartschool.leaver !== 1
 				);
 				const { google_cred, newUser } = await createNewUser(
 					service,
@@ -233,9 +270,13 @@ async function startProvisioning(service) {
 				</div>`;
 				if (user.smartschool.internalId) {
 					await sendEmail(title, body, user.smartschool.internalId);
-				}
-				else{
-					await addMailToQueue(title, body, user.smartschool.username)
+				} else {
+					logger.warn(`Can't send email to ${user.smartschool.username}, missing internalId`)
+					await addMailToQueue(
+						title,
+						body,
+						user.smartschool.username
+					);
 				}
 				await sendEmail(
 					title + ": KOPIE",
@@ -247,7 +288,7 @@ async function startProvisioning(service) {
 					"25045"
 				);
 
-				userObj.google[0] =  {
+				userObj.google[0] = {
 					id: newUser.data.id,
 					email: newUser.data.primaryEmail,
 					name: {
@@ -256,43 +297,50 @@ async function startProvisioning(service) {
 						fullname: newUser.data.name.fullName,
 					},
 					orgUnit: newUser.data.orgUnitPath,
-					suspended: newUser.data.suspended
+					suspended: newUser.data.suspended,
 				};
 			} else {
-				console.log(`Creating new users skipped.`);
+				logger.info(`Creating new users skipped.`);
 			}
 		}
+		//TODO: ERR BIJ OPSLAAN
 		await updateProvisioningFile(users_file.file, users_file.content);
 	} else {
-		console.log("no new users found");
+		logger.info("no new users found");
 	}
 
 	// await photoProvisioning(service)
-
+	logger.info('Creating new Google Groups')
 	await createNewGroups(service);
 
+	logger.info('Adding users to Google Groups')
 	await addUserToGroups(service);
 
+	logger.info('Deleting old Google Groups')
 	await deleteOldGroups(service);
 
 	//7. Check for deleted users and delete their account
+	logger.info('Searching for deleted users')
 	const deletedUsers = await findDeletedUsers();
+	logger.info(`Deleting ${deletedUsers.length} new users`)
 	if (deletedUsers && deletedUsers.length > 0) {
 		if (!config.is_test) {
 			for (const user of deletedUsers) {
 				await service.users.delete({
-					userKey: user.google.id,
+					userKey: user.google[0].id,
 				});
 			}
 		} else {
-			console.log("Deleting user skipped.");
+			logger.info("Deleting user skipped.");
 		}
 	} else {
-		console.log("no deleted users found");
+		logger.info("no deleted users found");
 	}
 
 	//8. Check for updated users and provision the data to google
+	logger.info('Searching for updated users')
 	const updatedUsers = await findUpdatedUsers();
+	logger.info(`Updating ${updatedUsers.length} new users`)
 	if (updatedUsers && updatedUsers.length > 0) {
 		if (!config.is_test) {
 			for (const user of updatedUsers) {
@@ -333,14 +381,36 @@ async function startProvisioning(service) {
 				</div>`;
 				if (user.smartschool.internalId) {
 					await sendEmail(title, body, user.smartschool.internalId);
-				}
-				else{
-					await addMailToQueue(title, body, user.smartschool.username)
+				} else {
+					logger.warn(`Can't send email to ${user.smartschool.username}, missing internalId`)
+					await addMailToQueue(
+						title,
+						body,
+						user.smartschool.username
+					);
 				}
 			}
 		}
 	} else {
-		console.log("no updated users found");
+		logger.info("no updated users found");
+	}
+
+	//9. Send current log file
+	const logFile = await latestLogFile()
+	// const to = ["25045", "17302010339"]
+	const to = ["25045"]
+	for (const rec of to) {
+		await sendEmailWithAttachments(
+			`GWBE log: ${dayjs().format("DD-MM-YYYY_HH-mm")}`, `
+				<h1 style="margin-bottom: 5px;">GWBE log</h1>
+				<div style="padding-left: 5px; border-left: 2px solid #ccc;">
+					<p><b>Datum: </b> ${dayjs().format("DD-MM-YYYY_HH-mm")}</p>
+				</div>
+			`,
+			rec,
+			'Null',
+			[logFile]
+		)
 	}
 
 	console.timeEnd("program_time");
